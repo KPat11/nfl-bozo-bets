@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, User, Target, DollarSign } from 'lucide-react'
 
 interface User {
@@ -45,7 +45,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       fetchUsers()
       fetchFanDuelProps()
     }
-  }, [isOpen])
+  }, [isOpen, fetchFanDuelProps])
 
   const fetchUsers = async () => {
     try {
@@ -57,7 +57,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   }
 
-  const fetchFanDuelProps = async () => {
+  const fetchFanDuelProps = useCallback(async () => {
     try {
       const response = await fetch(`/api/fanduel-props?week=${week}&season=${season}`)
       const data = await response.json()
@@ -65,7 +65,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     } catch (error) {
       console.error('Error fetching FanDuel props:', error)
     }
-  }
+  }, [week, season])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

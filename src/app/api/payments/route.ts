@@ -9,10 +9,7 @@ const createPaymentSchema = z.object({
   method: z.string().optional()
 })
 
-const updatePaymentSchema = z.object({
-  status: z.enum(['PENDING', 'PAID', 'OVERDUE', 'CANCELLED']),
-  method: z.string().optional()
-})
+// Removed unused schema
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +18,7 @@ export async function GET(request: NextRequest) {
     const weeklyBetId = searchParams.get('weeklyBetId')
     const status = searchParams.get('status')
 
-    const where: any = {}
+    const where: Record<string, any> = {}
     if (userId) where.userId = userId
     if (weeklyBetId) where.weeklyBetId = weeklyBetId
     if (status) where.status = status

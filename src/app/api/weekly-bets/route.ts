@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const season = searchParams.get('season')
     const userId = searchParams.get('userId')
 
-    const where: any = {}
+    const where: Record<string, any> = {}
     if (week) where.week = parseInt(week)
     if (season) where.season = parseInt(season)
     if (userId) where.userId = userId

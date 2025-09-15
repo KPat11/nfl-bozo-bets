@@ -34,8 +34,8 @@ interface Payment {
 
 export default function Home() {
   const [users, setUsers] = useState<User[]>([])
-  const [currentWeek, setCurrentWeek] = useState(1)
-  const [currentSeason, setCurrentSeason] = useState(2024)
+  const [currentWeek] = useState(1)
+  const [currentSeason] = useState(2024)
   const [loading, setLoading] = useState(true)
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
@@ -76,11 +76,7 @@ export default function Home() {
     )
   }
 
-  const getPaidBets = () => {
-    return getCurrentWeekBets().filter(bet => 
-      bet.payments.some(payment => payment.status === 'PAID')
-    )
-  }
+  // Removed unused function
 
   const getHitBets = () => {
     return getCurrentWeekBets().filter(bet => bet.status === 'HIT')
@@ -143,7 +139,7 @@ export default function Home() {
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Week's Bets</p>
+                <p className="text-sm font-medium text-gray-600">This Week&apos;s Bets</p>
                 <p className="text-2xl font-bold text-gray-900">{getCurrentWeekBets().length}</p>
               </div>
             </div>

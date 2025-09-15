@@ -31,7 +31,7 @@ class MockNotificationService implements NotificationService {
 
 const notificationService = new MockNotificationService()
 
-export async function sendPaymentReminder(userId: string, userName: string, week: number, season: number): Promise<void> {
+export async function sendPaymentReminder(userId: string, userName: string, week: number, _season: number): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId }
   })
@@ -110,7 +110,7 @@ export async function sendPropResultNotification(userId: string, userName: strin
   }
 }
 
-export async function sendWeeklyReminder(userId: string, userName: string, week: number, season: number): Promise<void> {
+export async function sendWeeklyReminder(userId: string, userName: string, week: number, _season: number): Promise<void> {
   const user = await prisma.user.findUnique({
     where: { id: userId }
   })

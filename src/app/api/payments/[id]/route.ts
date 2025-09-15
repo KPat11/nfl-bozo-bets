@@ -19,7 +19,7 @@ export async function PATCH(
     const payment = await prisma.payment.update({
       where: { id },
       data: {
-        status: status as any,
+        status: status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED',
         method,
         paidAt: status === 'PAID' ? new Date() : null
       },

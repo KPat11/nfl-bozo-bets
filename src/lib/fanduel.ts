@@ -84,7 +84,7 @@ export async function fetchFanDuelProps(week: number, season: number): Promise<F
         week: prop.week,
         season: prop.season,
         gameTime: new Date(prop.gameTime),
-        status: prop.status as any,
+        status: prop.status as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
         result: prop.result
       },
       create: {
@@ -99,7 +99,7 @@ export async function fetchFanDuelProps(week: number, season: number): Promise<F
         week: prop.week,
         season: prop.season,
         gameTime: new Date(prop.gameTime),
-        status: prop.status as any,
+        status: prop.status as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
         result: prop.result
       }
     })
@@ -128,7 +128,7 @@ export async function updatePropResults(week: number, season: number): Promise<v
     await prisma.fanduelProp.update({
       where: { id: prop.id },
       data: { 
-        status: mockResult as any,
+        status: mockResult as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
         result: mockResult === 'HIT' ? 'over' : 'under'
       }
     })
@@ -141,7 +141,7 @@ export async function updatePropResults(week: number, season: number): Promise<v
         season
       },
       data: { 
-        status: mockResult as any
+        status: mockResult as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED'
       }
     })
   }
