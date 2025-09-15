@@ -1,36 +1,160 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NFL Bozo Bets App
+
+A web application for tracking weekly NFL prop bets among friends, with payment tracking and automated notifications.
+
+## Features
+
+- **Member Management**: Add and manage group members with contact information
+- **Weekly Bet Tracking**: Submit and track prop bets for each NFL week
+- **FanDuel Integration**: Link bets to FanDuel props for automatic result tracking
+- **Payment Tracking**: Monitor who has paid for their weekly bets
+- **Automated Notifications**: Send SMS and push notifications for:
+  - Payment reminders (Friday noon - Sunday 12:45 PM ET)
+  - Prop result notifications (HIT/BOZO status)
+  - Weekly bet reminders
+- **Real-time Updates**: Automatic prop result tracking and status updates
+- **Responsive Design**: Works on desktop and mobile devices
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: SQLite (development), PostgreSQL (production)
+- **UI Components**: Lucide React icons, custom components
+- **Notifications**: Mock service (ready for Twilio SMS, FCM push notifications)
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ 
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <repository-url>
+cd nfl-bozo-bets
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up the database:
+```bash
+npx prisma generate
+npx prisma db push
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Start the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-To learn more about Next.js, take a look at the following resources:
+## Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Create a `.env` file in the root directory:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+# Database
+DATABASE_URL="file:./dev.db"
 
-## Deploy on Vercel
+# Cron Jobs (for production)
+CRON_SECRET="your-secret-key"
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# SMS Service (for production)
+TWILIO_ACCOUNT_SID="your-twilio-account-sid"
+TWILIO_AUTH_TOKEN="your-twilio-auth-token"
+TWILIO_PHONE_NUMBER="your-twilio-phone-number"
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Push Notifications (for production)
+FCM_SERVER_KEY="your-fcm-server-key"
+```
+
+## API Endpoints
+
+### Users
+- `GET /api/users` - Get all users
+- `POST /api/users` - Create a new user
+
+### Weekly Bets
+- `GET /api/weekly-bets` - Get weekly bets (with optional filters)
+- `POST /api/weekly-bets` - Create a new weekly bet
+
+### Payments
+- `GET /api/payments` - Get payments (with optional filters)
+- `POST /api/payments` - Create a new payment
+- `PATCH /api/payments/[id]` - Update payment status
+- `DELETE /api/payments/[id]` - Delete payment
+
+### FanDuel Props
+- `GET /api/fanduel-props` - Get available props for a week/season
+- `POST /api/fanduel-props` - Update prop results
+
+### Notifications
+- `POST /api/cron/notifications` - Trigger notification sending
+
+## Database Schema
+
+The app uses the following main entities:
+
+- **User**: Group members with contact information
+- **WeeklyBet**: Individual prop bets for each week
+- **Payment**: Payment tracking for each bet
+- **FanduelProp**: FanDuel prop data for integration
+- **Notification**: Notification history and status
+
+## Deployment
+
+### Vercel (Recommended)
+
+1. Push your code to GitHub
+2. Connect your repository to Vercel
+3. Set environment variables in Vercel dashboard
+4. Deploy
+
+### Other Platforms
+
+The app can be deployed to any platform that supports Next.js:
+- Netlify
+- Railway
+- DigitalOcean App Platform
+- AWS Amplify
+
+## Production Setup
+
+### Database
+- Use PostgreSQL for production
+- Update `DATABASE_URL` in environment variables
+- Run migrations: `npx prisma migrate deploy`
+
+### Notifications
+- Set up Twilio account for SMS
+- Configure Firebase Cloud Messaging for push notifications
+- Update notification service with real credentials
+
+### Cron Jobs
+- Set up Vercel Cron or similar service
+- Configure payment reminder schedule (Friday noon ET)
+- Configure prop result updates (after games)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Support
+
+For questions or issues, please open a GitHub issue or contact the development team.
