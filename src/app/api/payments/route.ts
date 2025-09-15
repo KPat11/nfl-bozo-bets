@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const weeklyBetId = searchParams.get('weeklyBetId')
     const status = searchParams.get('status')
 
-    const where: Record<string, any> = {}
+    const where: Record<string, string | number> = {}
     if (userId) where.userId = userId
     if (weeklyBetId) where.weeklyBetId = weeklyBetId
     if (status) where.status = status
