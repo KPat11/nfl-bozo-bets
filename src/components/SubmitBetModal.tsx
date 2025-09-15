@@ -40,13 +40,6 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchUsers()
-      fetchFanDuelProps()
-    }
-  }, [isOpen, fetchFanDuelProps])
-
   const fetchUsers = async () => {
     try {
       const response = await fetch('/api/users')
@@ -66,6 +59,13 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       console.error('Error fetching FanDuel props:', error)
     }
   }, [week, season])
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchUsers()
+      fetchFanDuelProps()
+    }
+  }, [isOpen, fetchFanDuelProps])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
