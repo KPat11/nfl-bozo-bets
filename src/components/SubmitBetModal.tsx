@@ -122,31 +122,31 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Submit Week {week} Bet</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-white">Submit Week {week} Bet</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-gray-400 hover:text-white transition-colors"
           >
             <X className="h-6 w-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Member *
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <select
                 name="userId"
                 value={formData.userId}
                 onChange={handleChange}
                 required
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <option value="">Select a member</option>
                 {users.map(user => (
@@ -159,37 +159,37 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Prop Bet *
             </label>
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="relative">
-                <Target className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Target className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <textarea
                   name="prop"
                   value={formData.prop}
                   onChange={handleChange}
                   required
                   rows={3}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
                   placeholder="Describe your prop bet (e.g., Josh Allen over 250.5 passing yards)"
                 />
               </div>
               
               {/* FanDuel Props Selection */}
               {fanduelProps.length > 0 && (
-                <div className="mt-2">
-                  <p className="text-sm text-gray-600 mb-2">Or select from FanDuel props:</p>
-                  <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-lg">
+                <div className="mt-3">
+                  <p className="text-sm text-gray-400 mb-3">Or select from FanDuel props:</p>
+                  <div className="max-h-32 overflow-y-auto border border-gray-600 rounded-lg bg-gray-700">
                     {fanduelProps.map(prop => (
                       <button
                         key={prop.id}
                         type="button"
                         onClick={() => handlePropSelect(prop)}
-                        className="w-full text-left p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                        className="w-full text-left p-3 hover:bg-gray-600 border-b border-gray-600 last:border-b-0 transition-colors"
                       >
-                        <div className="text-sm font-medium">{prop.player} ({prop.team})</div>
-                        <div className="text-xs text-gray-600">{prop.prop} {prop.line} - {prop.odds > 0 ? '+' : ''}{prop.odds}</div>
+                        <div className="text-sm font-medium text-white">{prop.player} ({prop.team})</div>
+                        <div className="text-xs text-gray-400">{prop.prop} {prop.line} - {prop.odds > 0 ? '+' : ''}{prop.odds}</div>
                       </button>
                     ))}
                   </div>
@@ -199,41 +199,41 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
               Odds (optional)
             </label>
             <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <input
                 type="number"
                 name="odds"
                 value={formData.odds}
                 onChange={handleChange}
                 step="0.5"
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 placeholder="e.g., -110, +150"
               />
             </div>
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+            <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
               {error}
             </div>
           )}
 
-          <div className="flex justify-end space-x-3 pt-4">
+          <div className="flex justify-end space-x-3 pt-6">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-6 py-3 text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {loading ? 'Submitting...' : 'Submit Bet'}
             </button>
