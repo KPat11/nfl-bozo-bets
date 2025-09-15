@@ -48,9 +48,10 @@ export default function Home() {
     try {
       const response = await fetch('/api/users')
       const data = await response.json()
-      setUsers(data)
+      setUsers(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching users:', error)
+      setUsers([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
