@@ -254,7 +254,7 @@ export default function Home() {
                       <div className="flex flex-col items-center space-y-3">
                         <Target className="h-12 w-12 text-gray-600" />
                         <p className="text-gray-400 text-lg">No bets for Week {currentWeek}</p>
-                        <p className="text-gray-500 text-sm">Click "Submit Bet" to add the first bet</p>
+                        <p className="text-gray-500 text-sm">Click &quot;Submit Bet&quot; to add the first bet</p>
                       </div>
                     </td>
                   </tr>
