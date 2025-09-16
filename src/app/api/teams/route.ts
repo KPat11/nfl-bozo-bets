@@ -42,6 +42,15 @@ export async function POST(request: NextRequest) {
 
     console.log('📝 Team data:', { name, description, color })
 
+    // Check if prisma.team exists
+    if (!prisma.team) {
+      console.error('❌ prisma.team is not available')
+      return NextResponse.json({ 
+        error: 'Database schema not ready. Please try again in a moment.',
+        details: 'Team model not found in Prisma client'
+      }, { status: 503 })
+    }
+
     const team = await prisma.team.create({
       data: {
         name,
@@ -63,6 +72,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Team with this name already exists' }, { status: 409 })
     }
 
-    return NextResponse.json({ error: 'Failed to create team' }, { status: 500 })
+    // Provide more detailed error information
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return NextResponse.json({ 
+      error: 'Failed to create team',
+      details: errorMessage
+    }, { status: 500 })
   }
 }
