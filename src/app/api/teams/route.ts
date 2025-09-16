@@ -10,9 +10,9 @@ const createTeamSchema = z.object({
 
 export async function GET() {
   try {
-    // Check if teams table exists by trying to access it
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const teams = await (prisma as any).team?.findMany({
+    console.log('🔍 Fetching teams...')
+    
+    const teams = await prisma.team.findMany({
       include: {
         users: {
           select: {
@@ -23,41 +23,38 @@ export async function GET() {
         }
       },
       orderBy: { createdAt: 'desc' }
-    }).catch(() => null)
+    })
 
-    if (!teams) {
-      // Return empty array if teams table doesn't exist yet
-      return NextResponse.json([])
-    }
-
+    console.log('✅ Teams fetched successfully:', teams.length, 'teams')
     return NextResponse.json(teams)
   } catch (error) {
-    console.error('Error fetching teams:', error)
-    return NextResponse.json([])
+    console.error('❌ Error fetching teams:', error)
+    return NextResponse.json({ error: 'Failed to fetch teams' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('🔍 Creating team...')
+    
     const body = await request.json()
     const { name, description, color } = createTeamSchema.parse(body)
 
-    // Check if teams table exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const team = await (prisma as any).team?.create({
+    console.log('📝 Team data:', { name, description, color })
+
+    const team = await prisma.team.create({
       data: {
         name,
         description,
         color: color || '#3b82f6' // Default blue color
       }
-    }).catch(() => null)
+    })
 
-    if (!team) {
-      return NextResponse.json({ error: 'Teams feature not available yet. Please set up the database first.' }, { status: 503 })
-    }
-
+    console.log('✅ Team created successfully:', team.name)
     return NextResponse.json(team, { status: 201 })
   } catch (error) {
+    console.error('❌ Error creating team:', error)
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
@@ -66,7 +63,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Team with this name already exists' }, { status: 409 })
     }
 
-    console.error('Error creating team:', error)
     return NextResponse.json({ error: 'Failed to create team' }, { status: 500 })
   }
 }
