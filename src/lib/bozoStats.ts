@@ -103,7 +103,8 @@ export async function updateBozoStats(week: number, season: number): Promise<voi
 
     // Update user's total bozo count (if field exists)
     try {
-      await prisma.user.update({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).user.update({
         where: { id: bet.userId },
         data: {
           totalBozos: {
@@ -119,7 +120,8 @@ export async function updateBozoStats(week: number, season: number): Promise<voi
   // Update user hit counts (if field exists)
   for (const bet of hitBets) {
     try {
-      await prisma.user.update({
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).user.update({
         where: { id: bet.userId },
         data: {
           totalHits: {
