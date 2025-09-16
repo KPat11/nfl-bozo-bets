@@ -28,15 +28,24 @@ export async function PUT(
         }
       } catch (error) {
         console.log('Team validation failed:', error)
+        return NextResponse.json({ error: 'Team management not available yet. Please update database schema.' }, { status: 503 })
       }
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: {
-        teamId: teamId || null
-      }
-    })
+    // Try to update user with teamId, handle case where field doesn't exist yet
+    let updatedUser
+    try {
+      updatedUser = await prisma.user.update({
+        where: { id },
+        data: {
+          teamId: teamId || null
+        }
+      })
+    } catch (teamIdError) {
+      console.log('teamId field not available in database yet:', teamIdError)
+      // Return error if teamId field doesn't exist
+      return NextResponse.json({ error: 'Team management not available yet. Please update database schema.' }, { status: 503 })
+    }
 
     return NextResponse.json(updatedUser)
   } catch (error) {
