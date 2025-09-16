@@ -21,7 +21,7 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
     email: '',
     teamId: ''
   })
-  const [teams, setTeams] = useState<Team[]>([])
+  const [teams, setTeams] = useState<{ id: string; name: string; color?: string }[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -30,9 +30,10 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
     try {
       const response = await fetch('/api/teams')
       const data = await response.json()
-      setTeams(data)
+      setTeams(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching teams:', error)
+      setTeams([])
     }
   }
 
@@ -65,6 +66,13 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address')
+      setLoading(false)
+      return
+    }
+
+    // Team validation
+    if (!formData.teamId) {
+      setError('Team selection is required')
       setLoading(false)
       return
     }
@@ -165,7 +173,7 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Team (optional)
+              Team *
             </label>
             <div className="relative">
               <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -173,9 +181,10 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
                 name="teamId"
                 value={formData.teamId}
                 onChange={handleChange}
+                required
                 className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
-                <option value="">Select a team (optional)</option>
+                <option value="">Select a team *</option>
                 {teams.map(team => (
                   <option key={team.id} value={team.id}>
                     {team.name}

@@ -9,6 +9,7 @@ import BozoLeaderboard from '@/components/BozoLeaderboard'
 import EditBetModal from '@/components/EditBetModal'
 import BozoTrollModal from '@/components/BozoTrollModal'
 import LeaderboardTab from '@/components/LeaderboardTab'
+import MemberManagement from '@/components/MemberManagement'
 
 interface User {
   id: string
@@ -54,7 +55,7 @@ export default function Home() {
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
   const [showEditBetModal, setShowEditBetModal] = useState(false)
   const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos' | 'leaderboard'>('bets')
+  const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos' | 'leaderboard' | 'management'>('bets')
   const [selectedBet, setSelectedBet] = useState<WeeklyBet | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [biggestBozo, setBiggestBozo] = useState<{
@@ -298,6 +299,16 @@ export default function Home() {
           >
             🏆 <span className="hidden sm:inline">Leaderboard</span>
           </button>
+          <button
+            onClick={() => setActiveTab('management')}
+            className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-3 rounded-md font-medium transition-colors text-sm sm:text-base ${
+              activeTab === 'management'
+                ? 'bg-orange-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            ⚙️ <span className="hidden sm:inline">Management</span>
+          </button>
         </div>
       </div>
 
@@ -381,6 +392,10 @@ export default function Home() {
 
                 {activeTab === 'leaderboard' && (
                   <LeaderboardTab currentWeek={currentWeek} currentSeason={currentSeason} />
+                )}
+
+                {activeTab === 'management' && (
+                  <MemberManagement onMemberUpdated={fetchUsers} />
                 )}
       </div>
 

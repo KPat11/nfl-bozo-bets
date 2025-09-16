@@ -272,7 +272,13 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               <select
                 name="userId"
                 value={formData.userId}
-                onChange={handleChange}
+                onChange={(e) => {
+                  console.log('Member selection changed:', e.target.value)
+                  setFormData(prev => ({
+                    ...prev,
+                    [e.target.name]: e.target.value
+                  }))
+                }}
                 required
                 className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
