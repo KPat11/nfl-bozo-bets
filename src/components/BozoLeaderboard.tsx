@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Trophy, Skull, Target, Users, Crown } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Trophy, Skull, Target, Crown } from 'lucide-react'
 
 interface BozoLeaderboardEntry {
   userId: string
@@ -38,7 +38,7 @@ export default function BozoLeaderboard({ currentWeek, currentSeason }: BozoLead
   const [weeklyStats, setWeeklyStats] = useState<WeeklyBozoStats | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const fetchBozoStats = async () => {
+  const fetchBozoStats = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -56,11 +56,11 @@ export default function BozoLeaderboard({ currentWeek, currentSeason }: BozoLead
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentWeek, currentSeason])
 
   useEffect(() => {
     fetchBozoStats()
-  }, [currentWeek, currentSeason])
+  }, [fetchBozoStats])
 
   if (loading) {
     return (
@@ -87,7 +87,7 @@ export default function BozoLeaderboard({ currentWeek, currentSeason }: BozoLead
             </div>
             <div>
               <h3 className="text-2xl font-bold text-white">🤡 Biggest Bozo of Week {currentWeek}</h3>
-              <p className="text-gray-400">The worst odds that didn't hit</p>
+              <p className="text-gray-400">The worst odds that didn&apos;t hit</p>
             </div>
           </div>
           

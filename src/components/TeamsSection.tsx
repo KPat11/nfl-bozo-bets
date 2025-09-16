@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Plus, Palette, Trash2, Edit } from 'lucide-react'
+import { Users, Plus, Trash2, Edit } from 'lucide-react'
 
 interface Team {
   id: string

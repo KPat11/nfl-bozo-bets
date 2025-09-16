@@ -113,19 +113,7 @@ export default function Home() {
     return users.reduce((total, user) => total + user.totalBozos, 0)
   }
 
-  const getTotalHits = () => {
-    return users.reduce((total, user) => total + user.totalHits, 0)
-  }
-
-  const updateBozoStats = async () => {
-    try {
-      await fetch(`/api/bozo-stats?week=${currentWeek}&season=${currentSeason}`, {
-        method: 'POST'
-      })
-    } catch (error) {
-      console.error('Error updating bozo stats:', error)
-    }
-  }
+  // Removed unused functions - they're not needed in the main component
 
   if (loading) {
     return (
