@@ -48,7 +48,7 @@ interface Payment {
 export default function Home() {
   const [users, setUsers] = useState<User[]>([])
   const [currentWeek, setCurrentWeek] = useState(3) // Week 3 of NFL season
-  const [currentSeason] = useState(2024)
+  const [currentSeason] = useState(2025)
   const [loading, setLoading] = useState(true)
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)

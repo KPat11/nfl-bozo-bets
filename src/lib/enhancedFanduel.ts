@@ -41,8 +41,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -110,
     underOdds: -110,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T18:00:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T18:00:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -57,8 +57,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -115,
     underOdds: -105,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T20:20:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T20:20:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -73,8 +73,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -110,
     underOdds: -110,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T16:25:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T16:25:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -89,8 +89,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -105,
     underOdds: -115,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T13:00:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T13:00:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -105,8 +105,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -120,
     underOdds: +100,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T13:00:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T13:00:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -121,8 +121,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -110,
     underOdds: -110,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T16:25:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T16:25:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -137,8 +137,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: -105,
     underOdds: -115,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T13:00:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T13:00:00Z',
     status: 'PENDING',
     confidence: 1.0
   },
@@ -153,8 +153,8 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     overOdds: +120,
     underOdds: -140,
     week: 1,
-    season: 2024,
-    gameTime: '2024-01-15T18:00:00Z',
+    season: 2025,
+    gameTime: '2025-01-15T18:00:00Z',
     status: 'PENDING',
     confidence: 1.0
   }

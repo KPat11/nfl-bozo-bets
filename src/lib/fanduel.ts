@@ -37,7 +37,7 @@ export async function fetchFanDuelProps(week: number, season: number): Promise<F
       underOdds: -110,
       week,
       season,
-      gameTime: '2024-01-15T18:00:00Z',
+      gameTime: '2025-01-15T18:00:00Z',
       status: 'PENDING'
     },
     {
@@ -51,7 +51,7 @@ export async function fetchFanDuelProps(week: number, season: number): Promise<F
       underOdds: -110,
       week,
       season,
-      gameTime: '2024-01-15T18:00:00Z',
+      gameTime: '2025-01-15T18:00:00Z',
       status: 'PENDING'
     },
     {
@@ -65,7 +65,7 @@ export async function fetchFanDuelProps(week: number, season: number): Promise<F
       underOdds: -110,
       week,
       season,
-      gameTime: '2024-01-15T18:00:00Z',
+      gameTime: '2025-01-15T18:00:00Z',
       status: 'PENDING'
     }
   ]

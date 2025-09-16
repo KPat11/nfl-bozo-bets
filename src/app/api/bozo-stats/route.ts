@@ -6,7 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
     const week = parseInt(searchParams.get('week') || '1')
-    const season = parseInt(searchParams.get('season') || '2024')
+    const season = parseInt(searchParams.get('season') || '2025')
     const limit = parseInt(searchParams.get('limit') || '10')
 
     switch (type) {
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const week = parseInt(searchParams.get('week') || '1')
-    const season = parseInt(searchParams.get('season') || '2024')
+    const season = parseInt(searchParams.get('season') || '2025')
 
     // This endpoint would typically be called by a cron job or admin action
     // to update bozo stats after games are completed

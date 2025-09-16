@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const week = parseInt(searchParams.get('week') || '0')
-    const season = parseInt(searchParams.get('season') || '0')
+    const season = parseInt(searchParams.get('season') || '2025')
 
     if (!week || !season) {
       return NextResponse.json({ error: 'Week and season are required' }, { status: 400 })
