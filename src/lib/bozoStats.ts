@@ -182,6 +182,7 @@ export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeader
 
 export async function getWeeklyBozoStats(week: number, season: number): Promise<WeeklyBozoStats> {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const biggestBozoStat = await (prisma as any).bozoStat?.findFirst({
     where: {
       week,
@@ -202,6 +203,7 @@ export async function getWeeklyBozoStats(week: number, season: number): Promise<
     }
   })
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const weeklyBozos = await (prisma as any).bozoStat?.count({
       where: { week, season }
     }).catch(() => 0) || 0

@@ -11,6 +11,7 @@ const createTeamSchema = z.object({
 export async function GET() {
   try {
     // Check if teams table exists by trying to access it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const teams = await (prisma as any).team?.findMany({
       include: {
         users: {
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
     const { name, description, color } = createTeamSchema.parse(body)
 
     // Check if teams table exists
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const team = await (prisma as any).team?.create({
       data: {
         name,

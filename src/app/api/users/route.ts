@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
     // Validate team exists if provided
     let team = null
     if (teamId) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       team = await (prisma as any).team?.findUnique({
         where: { id: teamId }
       }).catch(() => null)
