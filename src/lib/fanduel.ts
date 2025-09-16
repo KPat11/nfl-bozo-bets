@@ -147,9 +147,74 @@ export async function updatePropResults(week: number, season: number): Promise<v
             })
           }
 
-          // Update bozo statistics after all props are updated
-          await updateBozoStats(week, season)
-        }
+  // Update bozo statistics after all props are updated
+  await updateBozoStats(week, season)
+}
+
+// Function to simulate live odds updates
+export async function updateLiveOdds(week: number, season: number): Promise<void> {
+  console.log(`Updating live odds for Week ${week}, Season ${season}`)
+
+  const props = await prisma.fanduelProp.findMany({
+    where: {
+      week,
+      season,
+      status: 'PENDING',
+      gameTime: { gt: new Date() } // Only update props for games that haven't started
+    }
+  })
+
+  for (const prop of props) {
+    // Simulate odds changes (in real app, this would come from live API)
+    const oddsVariation = (Math.random() - 0.5) * 20 // ±10 point variation
+    const newOdds = Math.round((prop.odds + oddsVariation) * 2) / 2 // Round to nearest 0.5
+    
+    // Ensure odds stay within reasonable bounds
+    const clampedOdds = Math.max(-200, Math.min(200, newOdds))
+    
+    await prisma.fanduelProp.update({
+      where: { id: prop.id },
+      data: { 
+        odds: clampedOdds,
+        overOdds: clampedOdds,
+        underOdds: clampedOdds
+      }
+    })
+
+    // Update associated weekly bets with new odds
+    await prisma.weeklyBet.updateMany({
+      where: {
+        fanduelId: prop.fanduelId,
+        week,
+        season
+      },
+      data: { 
+        odds: clampedOdds
+      }
+    })
+  }
+}
+
+// Function to get live odds for a specific prop
+export async function getLiveOdds(fanduelId: string): Promise<{ odds: number; overOdds: number; underOdds: number } | null> {
+  try {
+    const prop = await prisma.fanduelProp.findUnique({
+      where: { fanduelId },
+      select: { odds: true, overOdds: true, underOdds: true }
+    })
+
+    if (!prop) return null
+
+    return {
+      odds: prop.odds,
+      overOdds: prop.overOdds || prop.odds,
+      underOdds: prop.underOdds || prop.odds
+    }
+  } catch (error) {
+    console.error('Error fetching live odds:', error)
+    return null
+  }
+}
 
 export async function getAvailableProps(week: number, season: number): Promise<FanDuelProp[]> {
   const props = await prisma.fanduelProp.findMany({

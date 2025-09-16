@@ -6,7 +6,6 @@ import { sendWelcomeEmail } from '@/lib/email'
 const createUserSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
   name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
-  phone: z.string().optional().transform(val => val ? val.replace(/\D/g, '') : undefined), // Remove non-digits
   teamId: z.string().optional()
 })
 
@@ -71,8 +70,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Creating user with data:', body)
     
-    const { email, name, phone, teamId } = createUserSchema.parse(body)
-    console.log('Parsed user data:', { email, name, phone, teamId })
+    const { email, name, teamId } = createUserSchema.parse(body)
+    console.log('Parsed user data:', { email, name, teamId })
 
     // Validate team exists if provided
     let team = null
@@ -94,8 +93,7 @@ export async function POST(request: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userData: any = {
       email,
-      name,
-      phone
+      name
     }
     
     // Only add teamId if it exists in the schema

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Mail, Phone, Users } from 'lucide-react'
+import { X, User, Mail, Users } from 'lucide-react'
 
 interface Team {
   id: string
@@ -19,7 +19,6 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
     teamId: ''
   })
   const [teams, setTeams] = useState<Team[]>([])
@@ -87,10 +86,10 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
         throw new Error(errorData.error || 'Failed to add member')
       }
 
-      setSuccess('Member added successfully! Welcome email sent.')
-      
-      // Reset form
-      setFormData({ name: '', email: '', phone: '', teamId: '' })
+              setSuccess('Member added successfully! Welcome email sent.')
+              
+              // Reset form
+              setFormData({ name: '', email: '', teamId: '' })
       
       // Close modal after a short delay
       setTimeout(() => {
@@ -163,22 +162,6 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Phone (optional)
-            </label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Enter phone number"
-              />
-            </div>
-          </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">

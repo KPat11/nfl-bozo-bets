@@ -39,6 +39,8 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [liveOdds, setLiveOdds] = useState<{ [key: string]: { odds: number; overOdds: number; underOdds: number } }>({})
+  const [oddsUpdateInterval, setOddsUpdateInterval] = useState<NodeJS.Timeout | null>(null)
 
   const fetchUsers = async () => {
     try {
@@ -60,12 +62,46 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   }, [week, season])
 
+  const fetchLiveOdds = useCallback(async () => {
+    try {
+      // Update all props with live odds
+      const response = await fetch(`/api/live-odds?week=${week}&season=${season}`, {
+        method: 'POST'
+      })
+      
+      if (response.ok) {
+        // Fetch updated props with new odds
+        await fetchFanDuelProps()
+      }
+    } catch (error) {
+      console.error('Error updating live odds:', error)
+    }
+  }, [week, season, fetchFanDuelProps])
+
+
   useEffect(() => {
     if (isOpen) {
       fetchUsers()
       fetchFanDuelProps()
+      
+      // Start live odds updates every 30 seconds
+      const interval = setInterval(() => {
+        fetchLiveOdds()
+      }, 30000)
+      
+      setOddsUpdateInterval(interval)
+      
+      // Initial live odds fetch
+      fetchLiveOdds()
     }
-  }, [isOpen, fetchFanDuelProps])
+    
+    return () => {
+      if (oddsUpdateInterval) {
+        clearInterval(oddsUpdateInterval)
+        setOddsUpdateInterval(null)
+      }
+    }
+  }, [isOpen, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -111,10 +147,11 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   }
 
   const handlePropSelect = (prop: FanDuelProp) => {
+    const currentOdds = liveOdds[prop.id]?.odds || prop.odds
     setFormData(prev => ({
       ...prev,
       prop: `${prop.player} (${prop.team}) - ${prop.prop} ${prop.line}`,
-      odds: prop.odds.toString(),
+      odds: currentOdds.toString(),
       fanduelId: prop.id
     }))
   }
@@ -176,25 +213,53 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 />
               </div>
               
-              {/* FanDuel Props Selection */}
-              {fanduelProps.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm text-gray-400 mb-3">Or select from FanDuel props:</p>
-                  <div className="max-h-32 overflow-y-auto border border-gray-600 rounded-lg bg-gray-700">
-                    {fanduelProps.map(prop => (
-                      <button
-                        key={prop.id}
-                        type="button"
-                        onClick={() => handlePropSelect(prop)}
-                        className="w-full text-left p-3 hover:bg-gray-600 border-b border-gray-600 last:border-b-0 transition-colors"
-                      >
-                        <div className="text-sm font-medium text-white">{prop.player} ({prop.team})</div>
-                        <div className="text-xs text-gray-400">{prop.prop} {prop.line} - {prop.odds > 0 ? '+' : ''}{prop.odds}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      {/* FanDuel Props Selection */}
+                      {fanduelProps.length > 0 && (
+                        <div className="mt-3">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm text-gray-400">Or select from FanDuel props:</p>
+                            <button
+                              type="button"
+                              onClick={fetchLiveOdds}
+                              className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                            >
+                              🔄 Refresh Odds
+                            </button>
+                          </div>
+                          <div className="max-h-32 overflow-y-auto border border-gray-600 rounded-lg bg-gray-700">
+                            {fanduelProps.map(prop => {
+                              const currentOdds = liveOdds[prop.id]?.odds || prop.odds
+                              const oddsChanged = liveOdds[prop.id] && liveOdds[prop.id].odds !== prop.odds
+                              
+                              return (
+                                <button
+                                  key={prop.id}
+                                  type="button"
+                                  onClick={() => handlePropSelect(prop)}
+                                  className="w-full text-left p-3 hover:bg-gray-600 border-b border-gray-600 last:border-b-0 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="text-sm font-medium text-white">{prop.player} ({prop.team})</div>
+                                      <div className="text-xs text-gray-400">{prop.prop} {prop.line}</div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                      <div className={`text-sm font-bold ${oddsChanged ? 'text-green-400' : 'text-white'}`}>
+                                        {currentOdds > 0 ? '+' : ''}{currentOdds}
+                                      </div>
+                                      {oddsChanged && (
+                                        <div className="text-xs text-green-400 animate-pulse">
+                                          LIVE
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
             </div>
           </div>
 
