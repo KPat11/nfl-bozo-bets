@@ -67,20 +67,28 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('Creating user with data:', body)
+    
     const { email, name, phone, teamId } = createUserSchema.parse(body)
+    console.log('Parsed user data:', { email, name, phone, teamId })
 
     // Validate team exists if provided
     let team = null
     if (teamId) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      team = await (prisma as any).team?.findUnique({
-        where: { id: teamId }
-      }).catch(() => null)
-      if (!team) {
-        return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        team = await (prisma as any).team?.findUnique({
+          where: { id: teamId }
+        }).catch(() => null)
+        if (!team) {
+          return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+        }
+      } catch (error) {
+        console.log('Team validation failed, continuing without team:', error)
       }
     }
 
+    console.log('Creating user in database...')
     const user = await prisma.user.create({
       data: {
         email,
@@ -89,6 +97,7 @@ export async function POST(request: NextRequest) {
         teamId
       }
     })
+    console.log('User created successfully:', user)
 
     // Try to add team data if available
     let userWithTeam = { ...user, team: null }
@@ -108,7 +117,8 @@ export async function POST(request: NextRequest) {
           ...user,
           team: team || null
         }
-      } catch {
+      } catch (error) {
+        console.log('Failed to fetch team data:', error)
         userWithTeam = { ...user, team: null }
       }
     }
@@ -118,17 +128,29 @@ export async function POST(request: NextRequest) {
       console.error('Failed to send welcome email:', error)
     })
 
+    console.log('Returning user with team data:', userWithTeam)
     return NextResponse.json(userWithTeam, { status: 201 })
   } catch (error) {
+    console.error('Error in POST /api/users:', error)
+    
     if (error instanceof z.ZodError) {
+      console.error('Validation error:', error.issues)
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      if (error.message.includes('Unique constraint')) {
+        return NextResponse.json({ error: 'User with this email already exists' }, { status: 409 })
+      }
+      if (error.message.includes('connect')) {
+        return NextResponse.json({ error: 'Database connection failed. Please try again later.' }, { status: 503 })
+      }
     }
 
-    console.error('Error creating user:', error)
-    return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Failed to create user', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 })
   }
 }
