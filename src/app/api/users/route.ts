@@ -13,7 +13,16 @@ const createUserSchema = z.object({
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
-      include: {
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        phone: true,
+        teamId: true,
+        totalBozos: true,
+        totalHits: true,
+        createdAt: true,
+        updatedAt: true,
         weeklyBets: {
           include: {
             payments: true
