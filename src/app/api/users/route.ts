@@ -12,6 +12,7 @@ const createUserSchema = z.object({
 
 export async function GET() {
   try {
+    // Fetch users with all available fields
     const users = await prisma.user.findMany({
       include: {
         weeklyBets: {
@@ -27,6 +28,7 @@ export async function GET() {
     const usersWithTeams = await Promise.all(users.map(async (user) => {
       try {
         // Check if user has teamId property (for backward compatibility)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const teamId = (user as any).teamId
         if (!teamId) {
           return {
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Creating user in database...')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const userData: any = {
       email,
       name,
