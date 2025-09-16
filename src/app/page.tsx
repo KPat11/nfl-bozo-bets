@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target, Edit3, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import AddMemberModal from '@/components/AddMemberModal'
 import SubmitBetModal from '@/components/SubmitBetModal'
 import TeamsSection from '@/components/TeamsSection'
 import BozoLeaderboard from '@/components/BozoLeaderboard'
+import EditBetModal from '@/components/EditBetModal'
+import BozoTrollModal from '@/components/BozoTrollModal'
+import LeaderboardTab from '@/components/LeaderboardTab'
 
 interface User {
   id: string
@@ -49,11 +52,18 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos'>('bets')
-
-  useEffect(() => {
-    fetchUsers()
-  }, [])
+  const [showEditBetModal, setShowEditBetModal] = useState(false)
+  const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos' | 'leaderboard'>('bets')
+  const [selectedBet, setSelectedBet] = useState<WeeklyBet | null>(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [biggestBozo, setBiggestBozo] = useState<{
+    userName: string
+    prop: string
+    odds: number
+    teamName?: string | null
+    teamColor?: string | null
+  } | null>(null)
 
   const fetchUsers = async () => {
     try {
@@ -68,6 +78,23 @@ export default function Home() {
     }
   }
 
+  const checkForBiggestBozo = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/bozo-stats?week=${currentWeek}&season=${currentSeason}`)
+      const data = await response.json()
+      
+      if (data.biggestBozo) {
+        setBiggestBozo(data.biggestBozo)
+        // Show troll modal after a short delay
+        setTimeout(() => {
+          setShowBozoTrollModal(true)
+        }, 2000)
+      }
+    } catch (error) {
+      console.error('Error checking biggest bozo:', error)
+    }
+  }, [currentWeek, currentSeason])
+
   const handleMemberAdded = () => {
     fetchUsers()
   }
@@ -75,6 +102,51 @@ export default function Home() {
   const handleBetSubmitted = () => {
     fetchUsers()
   }
+
+  const handleEditBet = (bet: WeeklyBet, user: User) => {
+    setSelectedBet(bet)
+    setSelectedUser(user)
+    setShowEditBetModal(true)
+  }
+
+  const handleBetUpdated = () => {
+    fetchUsers()
+    setShowEditBetModal(false)
+    setSelectedBet(null)
+    setSelectedUser(null)
+  }
+
+  const handleMarkPayment = async (bet: WeeklyBet, status: 'PAID' | 'UNPAID') => {
+    try {
+      const response = await fetch('/api/payments/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          weeklyBetId: bet.id,
+          status,
+          method: 'Cash',
+          amount: 10
+        }),
+      })
+
+      if (response.ok) {
+        fetchUsers()
+      }
+    } catch (error) {
+      console.error('Error marking payment:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers()
+    checkForBiggestBozo()
+  }, [checkForBiggestBozo])
+
+  useEffect(() => {
+    checkForBiggestBozo()
+  }, [currentWeek, checkForBiggestBozo])
 
   const goToPreviousWeek = () => {
     if (currentWeek > 1) {
@@ -204,16 +276,26 @@ export default function Home() {
           >
             Teams & Groups
           </button>
-          <button
-            onClick={() => setActiveTab('bozos')}
-            className={`px-6 py-3 rounded-md font-medium transition-colors ${
-              activeTab === 'bozos'
-                ? 'bg-red-600 text-white'
-                : 'text-gray-400 hover:text-white'
-            }`}
-          >
-            🤡 Bozo Stats
-          </button>
+                  <button
+                    onClick={() => setActiveTab('bozos')}
+                    className={`px-6 py-3 rounded-md font-medium transition-colors ${
+                      activeTab === 'bozos'
+                        ? 'bg-red-600 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    🤡 Bozo Stats
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('leaderboard')}
+                    className={`px-6 py-3 rounded-md font-medium transition-colors ${
+                      activeTab === 'leaderboard'
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    🏆 Leaderboard
+                  </button>
         </div>
       </div>
 
@@ -291,9 +373,13 @@ export default function Home() {
           <TeamsSection onTeamCreated={fetchUsers} />
         )}
 
-        {activeTab === 'bozos' && (
-          <BozoLeaderboard currentWeek={currentWeek} currentSeason={currentSeason} />
-        )}
+                {activeTab === 'bozos' && (
+                  <BozoLeaderboard currentWeek={currentWeek} currentSeason={currentSeason} />
+                )}
+
+                {activeTab === 'leaderboard' && (
+                  <LeaderboardTab currentWeek={currentWeek} currentSeason={currentSeason} />
+                )}
       </div>
 
       {/* Current Week Bets - Only show on bets tab */}
@@ -322,22 +408,25 @@ export default function Home() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                    Payment
-                  </th>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Payment
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Actions
+                          </th>
                 </tr>
               </thead>
               <tbody className="bg-gray-800 divide-y divide-gray-700">
-                {getCurrentWeekBets().length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center space-y-3">
-                        <Target className="h-12 w-12 text-gray-600" />
-                        <p className="text-gray-400 text-lg">No bets for Week {currentWeek}</p>
-                        <p className="text-gray-500 text-sm">Click &quot;Submit Bet&quot; to add the first bet</p>
-                      </div>
-                    </td>
-                  </tr>
+                        {getCurrentWeekBets().length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="px-6 py-12 text-center">
+                              <div className="flex flex-col items-center space-y-3">
+                                <Target className="h-12 w-12 text-gray-600" />
+                                <p className="text-gray-400 text-lg">No bets for Week {currentWeek}</p>
+                                <p className="text-gray-500 text-sm">Click &quot;Submit Bet&quot; to add the first bet</p>
+                              </div>
+                            </td>
+                          </tr>
                 ) : (
                   getCurrentWeekBets().map((bet) => {
                     const user = users.find(u => u.id === bet.userId)
@@ -394,20 +483,56 @@ export default function Home() {
                             {bet.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            {isPaid ? (
-                              <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
-                                Paid
-                              </span>
-                            ) : (
-                              <div className="flex items-center">
-                                <AlertCircle className="h-4 w-4 text-red-400 mr-2" />
-                                <span className="text-sm text-red-400">Unpaid</span>
-                              </div>
-                            )}
-                          </div>
-                        </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center space-x-2">
+                                    {isPaid ? (
+                                      <span className="inline-flex px-3 py-1 text-xs font-semibold rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
+                                        Paid
+                                      </span>
+                                    ) : (
+                                      <div className="flex items-center">
+                                        <AlertCircle className="h-4 w-4 text-red-400 mr-2" />
+                                        <span className="text-sm text-red-400">Unpaid</span>
+                                      </div>
+                                    )}
+                                    <div className="flex space-x-1">
+                                      <button
+                                        onClick={() => handleMarkPayment(bet, isPaid ? 'UNPAID' : 'PAID')}
+                                        className={`p-1 rounded ${
+                                          isPaid 
+                                            ? 'text-red-400 hover:text-red-300 hover:bg-red-500/20' 
+                                            : 'text-green-400 hover:text-green-300 hover:bg-green-500/20'
+                                        } transition-colors`}
+                                        title={isPaid ? 'Mark as Unpaid' : 'Mark as Paid'}
+                                      >
+                                        {isPaid ? <XCircle className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center space-x-2">
+                                    <button
+                                      onClick={() => handleEditBet(bet, user!)}
+                                      className="p-2 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg transition-colors"
+                                      title="Edit Bet"
+                                    >
+                                      <Edit3 className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        if (confirm('Are you sure you want to delete this bet?')) {
+                                          fetch(`/api/weekly-bets/${bet.id}`, { method: 'DELETE' })
+                                            .then(() => fetchUsers())
+                                        }
+                                      }}
+                                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-colors"
+                                      title="Delete Bet"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </td>
                       </tr>
                     )
                   })
@@ -426,13 +551,27 @@ export default function Home() {
         onMemberAdded={handleMemberAdded}
       />
       
-      <SubmitBetModal
-        isOpen={showSubmitBetModal}
-        onClose={() => setShowSubmitBetModal(false)}
-        onBetSubmitted={handleBetSubmitted}
-        week={currentWeek}
-        season={currentSeason}
-      />
+              <SubmitBetModal
+                isOpen={showSubmitBetModal}
+                onClose={() => setShowSubmitBetModal(false)}
+                onBetSubmitted={handleBetSubmitted}
+                week={currentWeek}
+                season={currentSeason}
+              />
+              
+              <EditBetModal
+                isOpen={showEditBetModal}
+                onClose={() => setShowEditBetModal(false)}
+                onBetUpdated={handleBetUpdated}
+                bet={selectedBet}
+                user={selectedUser}
+              />
+              
+              <BozoTrollModal
+                isOpen={showBozoTrollModal}
+                onClose={() => setShowBozoTrollModal(false)}
+                biggestBozo={biggestBozo}
+              />
     </div>
   )
 }

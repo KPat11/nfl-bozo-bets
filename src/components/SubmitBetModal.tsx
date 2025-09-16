@@ -39,7 +39,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [liveOdds, setLiveOdds] = useState<{ [key: string]: { odds: number; overOdds: number; underOdds: number } }>({})
+  const [liveOdds] = useState<{ [key: string]: { odds: number; overOdds: number; underOdds: number } }>({})
   const [oddsUpdateInterval, setOddsUpdateInterval] = useState<NodeJS.Timeout | null>(null)
 
   const fetchUsers = async () => {
