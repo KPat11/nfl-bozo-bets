@@ -13,16 +13,7 @@ const createUserSchema = z.object({
 export async function GET() {
   try {
     const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        teamId: true,
-        totalBozos: true,
-        totalHits: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
         weeklyBets: {
           include: {
             payments: true
@@ -35,9 +26,18 @@ export async function GET() {
     // Try to add team data if available
     const usersWithTeams = await Promise.all(users.map(async (user) => {
       try {
+        // Check if user has teamId property (for backward compatibility)
+        const teamId = (user as any).teamId
+        if (!teamId) {
+          return {
+            ...user,
+            team: null
+          }
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const team = await (prisma as any).team?.findUnique({
-          where: { id: user.teamId },
+          where: { id: teamId },
           select: {
             id: true,
             name: true,
@@ -89,13 +89,19 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('Creating user in database...')
+    const userData: any = {
+      email,
+      name,
+      phone
+    }
+    
+    // Only add teamId if it exists in the schema
+    if (teamId) {
+      userData.teamId = teamId
+    }
+
     const user = await prisma.user.create({
-      data: {
-        email,
-        name,
-        phone,
-        teamId
-      }
+      data: userData
     })
     console.log('User created successfully:', user)
 
