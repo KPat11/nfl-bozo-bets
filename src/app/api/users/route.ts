@@ -18,19 +18,37 @@ export async function GET() {
           include: {
             payments: true
           }
-        },
-        team: {
-          select: {
-            id: true,
-            name: true,
-            color: true
-          }
         }
       },
       orderBy: { createdAt: 'desc' }
     }).catch(() => [])
 
-    return NextResponse.json(users)
+    // Try to add team data if available
+    const usersWithTeams = await Promise.all(users.map(async (user) => {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const team = await (prisma as any).team?.findUnique({
+          where: { id: user.teamId },
+          select: {
+            id: true,
+            name: true,
+            color: true
+          }
+        }).catch(() => null)
+        
+        return {
+          ...user,
+          team: team || null
+        }
+      } catch {
+        return {
+          ...user,
+          team: null
+        }
+      }
+    }))
+
+    return NextResponse.json(usersWithTeams)
   } catch (error) {
     console.error('Error fetching users:', error)
     return NextResponse.json([]) // Return empty array instead of error
@@ -60,24 +78,38 @@ export async function POST(request: NextRequest) {
         name,
         phone,
         teamId
-      },
-      include: {
-        team: {
+      }
+    })
+
+    // Try to add team data if available
+    let userWithTeam = { ...user, team: null }
+    if (teamId) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const team = await (prisma as any).team?.findUnique({
+          where: { id: teamId },
           select: {
             id: true,
             name: true,
             color: true
           }
+        }).catch(() => null)
+        
+        userWithTeam = {
+          ...user,
+          team: team || null
         }
+      } catch {
+        userWithTeam = { ...user, team: null }
       }
-    })
+    }
 
     // Send welcome email (async, don't wait for it)
     sendWelcomeEmail(email, name, team?.name).catch(error => {
       console.error('Failed to send welcome email:', error)
     })
 
-    return NextResponse.json(user, { status: 201 })
+    return NextResponse.json(userWithTeam, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
