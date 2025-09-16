@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,21 +8,19 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  phone     String?
-  teamId    String?
-  totalBozos Int     @default(0)  // Total bozo count
-  totalHits  Int     @default(0)  // Total hits count
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  weeklyBets WeeklyBet[]
-  payments   Payment[]
-  team       Team?    @relation(fields: [teamId], references: [id])
+  id         String      @id @default(cuid())
+  email      String      @unique
+  name       String
+  phone      String?
+  teamId     String?
+  totalBozos Int         @default(0)
+  totalHits  Int         @default(0)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
   bozoStats  BozoStat[]
+  payments   Payment[]
+  team       Team?       @relation(fields: [teamId], references: [id])
+  weeklyBets WeeklyBet[]
 
   @@map("users")
 }
@@ -34,101 +29,93 @@ model Team {
   id          String   @id @default(cuid())
   name        String   @unique
   description String?
-  color       String?  // Hex color for team identification
+  color       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-
-  // Relations
-  users User[]
+  users       User[]
 
   @@map("teams")
 }
 
 model WeeklyBet {
-  id          String   @id @default(cuid())
-  userId      String
-  week        Int
-  season      Int
-  prop        String
-  odds        Float?
-  fanduelId   String?  // FanDuel prop ID for tracking
-  status      PropStatus @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payments    Payment[]
+  id        String     @id @default(cuid())
+  userId    String
+  week      Int
+  season    Int
+  prop      String
+  odds      Float?
+  fanduelId String?
+  status    PropStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  payments  Payment[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, week, season])
   @@map("weekly_bets")
 }
 
 model Payment {
-  id          String      @id @default(cuid())
+  id          String        @id @default(cuid())
   userId      String
   weeklyBetId String
   amount      Float
   status      PaymentStatus @default(PENDING)
-  method      String?     // "venmo", "paypal", "cash", etc.
+  method      String?
   paidAt      DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  // Relations
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  weeklyBet   WeeklyBet   @relation(fields: [weeklyBetId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weeklyBet   WeeklyBet     @relation(fields: [weeklyBetId], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  type        NotificationType
-  message     String
-  sent        Boolean  @default(false)
-  sentAt      DateTime?
-  createdAt   DateTime @default(now())
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  message   String
+  sent      Boolean          @default(false)
+  sentAt    DateTime?
+  createdAt DateTime         @default(now())
 
   @@map("notifications")
 }
 
 model FanduelProp {
-  id          String   @id @default(cuid())
-  fanduelId   String   @unique
-  player      String
-  team        String
-  prop        String
-  line        Float
-  odds        Float
-  overOdds    Float?
-  underOdds   Float?
-  week        Int
-  season      Int
-  gameTime    DateTime
-  status      PropStatus @default(PENDING)
-  result      String?  // "over", "under", "push"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String     @id @default(cuid())
+  fanduelId String     @unique
+  player    String
+  team      String
+  prop      String
+  line      Float
+  odds      Float
+  overOdds  Float?
+  underOdds Float?
+  week      Int
+  season    Int
+  gameTime  DateTime
+  status    PropStatus @default(PENDING)
+  result    String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@map("fanduel_props")
 }
 
 model BozoStat {
-  id          String   @id @default(cuid())
-  userId      String
-  week        Int
-  season      Int
-  isBiggestBozo Boolean @default(false)  // True if this was the biggest bozo of the week
-  odds        Float?   // The odds that were bozo'd
-  prop        String   // The prop that was bozo'd
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String
+  week          Int
+  season        Int
+  isBiggestBozo Boolean  @default(false)
+  odds          Float?
+  prop          String
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, week, season]) // One bozo stat per user per week
+  @@unique([userId, week, season])
   @@map("bozo_stats")
 }
 
