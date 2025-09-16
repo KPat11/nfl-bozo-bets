@@ -3,40 +3,65 @@ import { prisma } from '@/lib/db'
 
 export async function POST() {
   try {
-    // This endpoint can be called to trigger database schema updates
-    // In production, you would typically use Prisma migrations
-    
     console.log('Starting database migration check...')
     
-    // Test if teamId field exists by trying a simple query
+    // Test if teamId field exists
+    let teamIdExists = false
     try {
-      // Use a raw query to avoid TypeScript issues during build
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (prisma as any).$queryRaw`SELECT teamId FROM users LIMIT 1`
-      console.log('teamId field already exists')
+      await (prisma as any).$queryRaw`SELECT "teamId" FROM users LIMIT 1`
+      teamIdExists = true
+      console.log('✅ teamId field exists')
     } catch (error) {
-      console.log('teamId field does not exist, database needs migration')
-      return NextResponse.json({ 
-        error: 'Database schema needs to be updated. Please run: npx prisma db push' 
-      }, { status: 503 })
+      console.log('❌ teamId field does not exist:', error)
     }
 
     // Test if team table exists
+    let teamTableExists = false
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (prisma as any).team?.findMany()
-      console.log('Team table exists')
+      teamTableExists = true
+      console.log('✅ Team table exists')
     } catch (error) {
-      console.log('Team table does not exist, database needs migration')
-      return NextResponse.json({ 
-        error: 'Database schema needs to be updated. Please run: npx prisma db push' 
-      }, { status: 503 })
+      console.log('❌ Team table does not exist:', error)
     }
 
-    return NextResponse.json({ 
-      message: 'Database schema is up to date',
-      status: 'ok'
-    })
+    // Test if bozo_stats table exists
+    let bozoStatsExists = false
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).bozoStat?.findMany()
+      bozoStatsExists = true
+      console.log('✅ BozoStat table exists')
+    } catch (error) {
+      console.log('❌ BozoStat table does not exist:', error)
+    }
+
+    const allTablesExist = teamIdExists && teamTableExists && bozoStatsExists
+
+    if (allTablesExist) {
+      return NextResponse.json({ 
+        message: 'Database schema is up to date',
+        status: 'ok',
+        details: {
+          teamIdField: teamIdExists,
+          teamTable: teamTableExists,
+          bozoStatsTable: bozoStatsExists
+        }
+      })
+    } else {
+      return NextResponse.json({ 
+        error: 'Database schema needs to be updated',
+        status: 'incomplete',
+        details: {
+          teamIdField: teamIdExists,
+          teamTable: teamTableExists,
+          bozoStatsTable: bozoStatsExists
+        },
+        instructions: 'Please run: npx prisma db push'
+      }, { status: 503 })
+    }
   } catch (error) {
     console.error('Migration check failed:', error)
     return NextResponse.json({ 
