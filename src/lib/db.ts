@@ -46,22 +46,43 @@ const createMockPrismaClient = (): PrismaClient => {
   return mockClient
 }
 
-// Create Prisma client with error handling
-let prisma: PrismaClient
+// Create Prisma client with proper PostgreSQL handling
+let prismaClient: PrismaClient
+let isDatabaseAvailable = false
 
 try {
-  prisma = globalForPrisma.prisma ?? new PrismaClient()
-  // Test the connection
-  prisma.$connect().catch(() => {
-    console.log('Database not available, using mock client')
-    prisma = createMockPrismaClient()
+  prismaClient = globalForPrisma.prisma ?? new PrismaClient({
+    log: ['query', 'info', 'warn', 'error'],
   })
+  
+  // Test the connection asynchronously
+  prismaClient.$connect()
+    .then(() => {
+      console.log('✅ Database connected successfully')
+      isDatabaseAvailable = true
+    })
+    .catch((error) => {
+      console.error('❌ Database connection failed:', error.message)
+      console.log('Using mock client for development')
+      isDatabaseAvailable = false
+    })
 } catch (error) {
   console.error('Failed to create Prisma client:', error)
   console.log('Using mock client for development')
-  prisma = createMockPrismaClient()
+  prismaClient = createMockPrismaClient()
+  isDatabaseAvailable = false
 }
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Export a wrapper that checks database availability
+export const prisma = new Proxy(prismaClient, {
+  get(target, prop) {
+    if (!isDatabaseAvailable && typeof prop === 'string') {
+      console.log(`Database not available, using mock for ${prop}`)
+      const mockClient = createMockPrismaClient()
+      return mockClient[prop as keyof PrismaClient]
+    }
+    return target[prop as keyof PrismaClient]
+  }
+})
 
-export { prisma }
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
