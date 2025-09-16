@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Plus, Trash2, Edit } from 'lucide-react'
+import { Users, Plus, Trash2, Edit, CheckCircle } from 'lucide-react'
+import CreateTeamModal from './CreateTeamModal'
 
 interface Team {
   id: string
@@ -24,6 +25,7 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const fetchTeams = async () => {
     try {
@@ -58,10 +60,16 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
       }
 
       setShowCreateModal(false)
+      setSuccess(`Team "${teamData.name}" created successfully!`)
+      setError('')
       onTeamCreated()
       fetchTeams()
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create team')
+      setSuccess('')
     }
   }
 
@@ -98,6 +106,13 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
         {error && (
           <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg mb-4">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="text-green-400 text-sm bg-green-500/10 border border-green-500/20 p-3 rounded-lg mb-4 flex items-center space-x-2">
+            <CheckCircle className="h-4 w-4" />
+            <span>{success}</span>
           </div>
         )}
 
@@ -173,146 +188,3 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
   )
 }
 
-// Create Team Modal Component
-interface CreateTeamModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onCreateTeam: (teamData: { name: string; description?: string; color?: string }) => void
-}
-
-function CreateTeamModal({ isOpen, onClose, onCreateTeam }: CreateTeamModalProps) {
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    color: '#3b82f6'
-  })
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    if (!formData.name.trim()) {
-      setError('Team name is required')
-      setLoading(false)
-      return
-    }
-
-    try {
-      await onCreateTeam({
-        name: formData.name.trim(),
-        description: formData.description.trim() || undefined,
-        color: formData.color
-      })
-      
-      setFormData({ name: '', description: '', color: '#3b82f6' })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create team')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
-
-  if (!isOpen) return null
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4 border border-gray-700 shadow-2xl">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-white">Create New Team</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            <Plus className="h-6 w-6 rotate-45" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Team Name *
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-              placeholder="Enter team name"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Description (optional)
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-              placeholder="Enter team description"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Team Color
-            </label>
-            <div className="flex items-center space-x-3">
-              <input
-                type="color"
-                name="color"
-                value={formData.color}
-                onChange={handleChange}
-                className="w-12 h-12 bg-gray-700 border border-gray-600 rounded-lg cursor-pointer"
-              />
-              <input
-                type="text"
-                value={formData.color}
-                onChange={handleChange}
-                className="flex-1 px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="#3b82f6"
-              />
-            </div>
-          </div>
-
-          {error && (
-            <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3 pt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              {loading ? 'Creating...' : 'Create Team'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}

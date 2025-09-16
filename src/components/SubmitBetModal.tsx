@@ -59,7 +59,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   const [isSearching, setIsSearching] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users')
       const data = await response.json()
@@ -69,7 +69,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
     }
-  }
+  }, [])
 
   const fetchFanDuelProps = useCallback(async () => {
     try {
@@ -192,7 +192,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval])
+  }, [isOpen, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

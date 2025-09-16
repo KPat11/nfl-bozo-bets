@@ -1,13 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, User, Mail, Users } from 'lucide-react'
+import { X, User, Users } from 'lucide-react'
 
-interface Team {
-  id: string
-  name: string
-  color?: string
-}
+// Team interface removed - using inline type
 
 interface AddMemberModalProps {
   isOpen: boolean
