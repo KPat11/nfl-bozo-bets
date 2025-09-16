@@ -45,14 +45,16 @@ export default function BozoLeaderboard({ currentWeek, currentSeason }: BozoLead
       // Fetch leaderboard
       const leaderboardResponse = await fetch('/api/bozo-stats?type=leaderboard&limit=10')
       const leaderboardData = await leaderboardResponse.json()
-      setLeaderboard(leaderboardData)
+      setLeaderboard(Array.isArray(leaderboardData) ? leaderboardData : [])
 
       // Fetch weekly stats
       const weeklyResponse = await fetch(`/api/bozo-stats?type=weekly&week=${currentWeek}&season=${currentSeason}`)
       const weeklyData = await weeklyResponse.json()
-      setWeeklyStats(weeklyData)
+      setWeeklyStats(weeklyData && typeof weeklyData === 'object' ? weeklyData : null)
     } catch (error) {
       console.error('Error fetching bozo stats:', error)
+      setLeaderboard([])
+      setWeeklyStats(null)
     } finally {
       setLoading(false)
     }

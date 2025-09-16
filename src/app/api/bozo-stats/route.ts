@@ -4,7 +4,7 @@ import { getBozoLeaderboard, getWeeklyBozoStats, updateBozoStats } from '@/lib/b
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type')
+    const type = searchParams.get('type') || 'leaderboard'
     const week = parseInt(searchParams.get('week') || '1')
     const season = parseInt(searchParams.get('season') || '2025')
     const limit = parseInt(searchParams.get('limit') || '10')
@@ -19,11 +19,14 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(weeklyStats)
 
       default:
-        return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 })
+        // Default to leaderboard if no type specified
+        const defaultLeaderboard = await getBozoLeaderboard(limit)
+        return NextResponse.json(defaultLeaderboard)
     }
   } catch (error) {
     console.error('Error fetching bozo stats:', error)
-    return NextResponse.json({ error: 'Failed to fetch bozo stats' }, { status: 500 })
+    // Return empty array instead of error to prevent frontend crashes
+    return NextResponse.json([])
   }
 }
 

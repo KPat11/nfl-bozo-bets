@@ -12,6 +12,12 @@ export async function GET() {
   try {
     console.log('🔍 Fetching teams...')
     
+    // Check if prisma.team exists
+    if (!prisma.team) {
+      console.error('❌ prisma.team is not available')
+      return NextResponse.json([])
+    }
+    
     const teams = await prisma.team.findMany({
       include: {
         users: {
@@ -29,7 +35,8 @@ export async function GET() {
     return NextResponse.json(teams)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
-    return NextResponse.json({ error: 'Failed to fetch teams' }, { status: 500 })
+    // Return empty array instead of error to prevent frontend crashes
+    return NextResponse.json([])
   }
 }
 
