@@ -4,12 +4,18 @@ import { useState, useEffect } from 'react'
 import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target } from 'lucide-react'
 import AddMemberModal from '@/components/AddMemberModal'
 import SubmitBetModal from '@/components/SubmitBetModal'
+import TeamsSection from '@/components/TeamsSection'
 
 interface User {
   id: string
   name: string
   email: string
   phone?: string
+  team?: {
+    id: string
+    name: string
+    color?: string
+  }
   weeklyBets: WeeklyBet[]
 }
 
@@ -39,6 +45,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'bets' | 'teams'>('bets')
 
   useEffect(() => {
     fetchUsers()
@@ -164,9 +171,37 @@ export default function Home() {
         </div>
       </header>
 
+      {/* Tab Navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg w-fit">
+          <button
+            onClick={() => setActiveTab('bets')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              activeTab === 'bets'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Weekly Bets
+          </button>
+          <button
+            onClick={() => setActiveTab('teams')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              activeTab === 'teams'
+                ? 'bg-blue-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Teams & Groups
+          </button>
+        </div>
+      </div>
+
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {activeTab === 'bets' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-700 hover:border-blue-500 transition-colors">
             <div className="flex items-center">
               <div className="p-3 rounded-lg bg-blue-500/20">
@@ -213,13 +248,20 @@ export default function Home() {
                 <p className="text-3xl font-bold text-white">
                   {getHitBets().length} / {getBozoBets().length}
                 </p>
-              </div>
             </div>
           </div>
-        </div>
+        </>
+        )}
 
-        {/* Current Week Bets */}
-        <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700">
+        {activeTab === 'teams' && (
+          <TeamsSection onTeamCreated={fetchUsers} />
+        )}
+      </div>
+
+      {/* Current Week Bets - Only show on bets tab */}
+      {activeTab === 'bets' && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+          <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700">
           <div className="px-6 py-4 border-b border-gray-700">
             <h2 className="text-xl font-semibold text-white">Week {currentWeek} Bets</h2>
             <p className="text-gray-400 text-sm mt-1">
@@ -273,7 +315,21 @@ export default function Home() {
                               </span>
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-white">{user?.name}</div>
+                              <div className="flex items-center space-x-2">
+                                <div className="text-sm font-medium text-white">{user?.name}</div>
+                                {user?.team && (
+                                  <span 
+                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                    style={{ 
+                                      backgroundColor: `${user.team.color || '#3b82f6'}20`,
+                                      color: user.team.color || '#3b82f6',
+                                      border: `1px solid ${user.team.color || '#3b82f6'}40`
+                                    }}
+                                  >
+                                    {user.team.name}
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-sm text-gray-400">{user?.email}</div>
                             </div>
                           </div>
@@ -316,7 +372,8 @@ export default function Home() {
             </table>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Modals */}
       <AddMemberModal

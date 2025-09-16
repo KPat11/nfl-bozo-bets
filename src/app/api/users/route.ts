@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { sendWelcomeEmail } from '@/lib/email'
 
 const createUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1),
-  phone: z.string().optional()
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
+  phone: z.string().optional().transform(val => val ? val.replace(/\D/g, '') : undefined), // Remove non-digits
+  teamId: z.string().optional()
 })
 
 export async function GET() {
@@ -20,6 +22,13 @@ export async function GET() {
         weeklyBets: {
           include: {
             payments: true
+          }
+        },
+        team: {
+          select: {
+            id: true,
+            name: true,
+            color: true
           }
         }
       },
@@ -41,14 +50,40 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { email, name, phone } = createUserSchema.parse(body)
+    const { email, name, phone, teamId } = createUserSchema.parse(body)
+
+    // Validate team exists if provided
+    let team = null
+    if (teamId) {
+      team = await prisma.team.findUnique({
+        where: { id: teamId }
+      })
+      if (!team) {
+        return NextResponse.json({ error: 'Team not found' }, { status: 404 })
+      }
+    }
 
     const user = await prisma.user.create({
       data: {
         email,
         name,
-        phone
+        phone,
+        teamId
+      },
+      include: {
+        team: {
+          select: {
+            id: true,
+            name: true,
+            color: true
+          }
+        }
       }
+    })
+
+    // Send welcome email (async, don't wait for it)
+    sendWelcomeEmail(email, name, team?.name).catch(error => {
+      console.error('Failed to send welcome email:', error)
     })
 
     return NextResponse.json(user, { status: 201 })
