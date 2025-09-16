@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
-import { sendWelcomeEmail } from '@/lib/email'
+// TODO: Email functionality commented out for future iteration
+// import { sendWelcomeEmail } from '@/lib/email'
 
 const createUserSchema = z.object({
   email: z.string().email('Invalid email address').toLowerCase().trim(),
@@ -130,10 +131,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // TODO: Email functionality commented out for future iteration
     // Send welcome email (async, don't wait for it)
-    sendWelcomeEmail(email, name, team?.name).catch(error => {
-      console.error('Failed to send welcome email:', error)
-    })
+    // sendWelcomeEmail(email, name, team?.name).catch(error => {
+    //   console.error('Failed to send welcome email:', error)
+    // })
 
     console.log('Returning user with team data:', userWithTeam)
     return NextResponse.json(userWithTeam, { status: 201 })

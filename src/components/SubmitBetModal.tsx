@@ -63,9 +63,11 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     try {
       const response = await fetch('/api/users')
       const data = await response.json()
-      setUsers(data)
+      console.log('Fetched users:', data) // Debug log
+      setUsers(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error('Error fetching users:', error)
+      setUsers([]) // Set empty array on error
     }
   }
 
@@ -164,6 +166,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   useEffect(() => {
     if (isOpen) {
+      // Reset form when modal opens
+      setFormData({ userId: '', prop: '', odds: '', fanduelId: '' })
+      setError('')
+      setPropMatchResult(null)
+      setSearchSuggestions([])
+      
       fetchUsers()
       fetchFanDuelProps()
       
