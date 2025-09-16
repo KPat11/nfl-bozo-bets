@@ -39,8 +39,25 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
   const [liveOdds] = useState<{ [key: string]: { odds: number; overOdds: number; underOdds: number } }>({})
   const [oddsUpdateInterval, setOddsUpdateInterval] = useState<NodeJS.Timeout | null>(null)
+  const [propMatchResult, setPropMatchResult] = useState<{
+    found: boolean
+    prop?: {
+      player: string
+      team: string
+      prop: string
+      line: number
+      odds: number
+      fanduelId: string
+    }
+    suggestions?: string[]
+    warning?: string
+    confidence?: number
+  } | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
 
   const fetchUsers = async () => {
     try {
@@ -78,6 +95,72 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   }, [week, season, fetchFanDuelProps])
 
+  const searchForProp = useCallback(async (propText: string) => {
+    if (!propText.trim()) {
+      setPropMatchResult(null)
+      setSearchSuggestions([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await fetch(`/api/prop-search?week=${week}&season=${season}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ propText })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setPropMatchResult(result)
+        
+        if (result.found && result.prop) {
+          // Auto-fill the form with matched prop
+          setFormData(prev => ({
+            ...prev,
+            prop: `${result.prop.player} (${result.prop.team}) - ${result.prop.prop} ${result.prop.line}`,
+            odds: result.prop.odds.toString(),
+            fanduelId: result.prop.fanduelId
+          }))
+        } else if (result.suggestions) {
+          setSearchSuggestions(result.suggestions)
+        }
+      }
+    } catch (error) {
+      console.error('Error searching for prop:', error)
+      setPropMatchResult({
+        found: false,
+        warning: 'Unable to fetch FanDuel data. Please enter your prop bet and odds manually.'
+      })
+    } finally {
+      setIsSearching(false)
+    }
+  }, [week, season])
+
+  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
+
+  const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setFormData(prev => ({ ...prev, prop: value }))
+    
+    // Debounced search
+    if (searchTimeout) {
+      clearTimeout(searchTimeout)
+    }
+    
+    const timeout = setTimeout(() => {
+      if (value.trim().length > 3) {
+        searchForProp(value)
+      } else {
+        setPropMatchResult(null)
+        setSearchSuggestions([])
+      }
+    }, 500)
+    
+    setSearchTimeout(timeout)
+  }
 
   useEffect(() => {
     if (isOpen) {
@@ -202,16 +285,76 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <div className="space-y-3">
               <div className="relative">
                 <Target className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <textarea
-                  name="prop"
-                  value={formData.prop}
-                  onChange={handleChange}
-                  required
-                  rows={3}
-                  className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
-                  placeholder="Describe your prop bet (e.g., Josh Allen over 250.5 passing yards)"
-                />
+                <div className="relative">
+                  <textarea
+                    name="prop"
+                    value={formData.prop}
+                    onChange={handlePropTextChange}
+                    required
+                    rows={3}
+                    className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                    placeholder="Describe your prop bet (e.g., Josh Allen over 250.5 passing yards, Eagles ML, etc.)"
+                  />
+                  {isSearching && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Prop Search Results */}
+              {propMatchResult && (
+                <div className="mt-3">
+                  {propMatchResult.found ? (
+                    <div className="bg-green-500/20 border border-green-500/30 rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-green-400 font-medium">Match Found!</span>
+                        <span className="text-green-300 text-sm">
+                          Confidence: {Math.round((propMatchResult.confidence || 0) * 100)}%
+                        </span>
+                      </div>
+                      <div className="text-white text-sm">
+                        <strong>{propMatchResult.prop?.player} ({propMatchResult.prop?.team})</strong>
+                        <br />
+                        {propMatchResult.prop?.prop} {propMatchResult.prop?.line}
+                        <br />
+                        <span className="text-green-300">
+                          Odds: {propMatchResult.prop?.odds && propMatchResult.prop.odds > 0 ? '+' : ''}{propMatchResult.prop?.odds}
+                        </span>
+                      </div>
+                    </div>
+                  ) : propMatchResult.warning ? (
+                    <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        <span className="text-yellow-400 font-medium">Warning</span>
+                      </div>
+                      <p className="text-yellow-300 text-sm">{propMatchResult.warning}</p>
+                      {searchSuggestions.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-yellow-300 text-sm font-medium mb-2">Try these suggestions:</p>
+                          <div className="space-y-1">
+                            {searchSuggestions.map((suggestion, index) => (
+                              <button
+                                key={index}
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, prop: suggestion }))
+                                  searchForProp(suggestion)
+                                }}
+                                className="block w-full text-left px-3 py-2 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm transition-colors"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
+                </div>
+              )}
               
                       {/* FanDuel Props Selection */}
                       {fanduelProps.length > 0 && (
