@@ -9,6 +9,7 @@ const createMockPrismaClient = (): PrismaClient => {
   const mockClient = {
     user: {
       findMany: async () => [],
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       create: async (data: any) => {
         console.log('Mock: Creating user with data:', data)
         return {
