@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prismaClient = prisma as any;
     
     // Check if team table exists

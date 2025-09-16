@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Test if we can access the prisma client
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const prismaClient = prisma as any;
     
     // Check if team model exists
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
         ORDER BY table_name;
       `;
       schemaInfo = { tables: result };
-    } catch (error) {
+    } catch {
       schemaInfo = { error: 'Could not query schema' };
     }
 
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
     if (hasTeamModel) {
       try {
         teamTest = await prismaClient.team.findMany();
-      } catch (error) {
+      } catch {
         teamTest = { error: 'Team model exists but query failed' };
       }
     }
