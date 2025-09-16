@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     // This endpoint can be called to trigger database schema updates
     // In production, you would typically use Prisma migrations
     
-    console.log('Starting database migration...')
+    console.log('Starting database migration check...')
     
-    // Test if teamId field exists
+    // Test if teamId field exists by trying a simple query
     try {
-      await prisma.user.findFirst({
-        where: { teamId: null }
-      })
+      // Use a raw query to avoid TypeScript issues during build
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).$queryRaw`SELECT teamId FROM users LIMIT 1`
       console.log('teamId field already exists')
     } catch (error) {
       console.log('teamId field does not exist, database needs migration')
