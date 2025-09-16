@@ -12,11 +12,6 @@ const createUserSchema = z.object({
 
 export async function GET() {
   try {
-    // Check if database is available
-    if (!prisma.user) {
-      return NextResponse.json([])
-    }
-
     const users = await prisma.user.findMany({
       include: {
         weeklyBets: {
@@ -44,11 +39,6 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if database is available
-    if (!prisma.user) {
-      return NextResponse.json({ error: 'Database not available' }, { status: 503 })
-    }
-
     const body = await request.json()
     const { email, name, phone, teamId } = createUserSchema.parse(body)
 

@@ -10,11 +10,6 @@ const createTeamSchema = z.object({
 
 export async function GET() {
   try {
-    // Check if database is available
-    if (!prisma.team) {
-      return NextResponse.json([])
-    }
-
     const teams = await prisma.team.findMany({
       include: {
         users: {
@@ -37,11 +32,6 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check if database is available
-    if (!prisma.team) {
-      return NextResponse.json({ error: 'Database not available' }, { status: 503 })
-    }
-
     const body = await request.json()
     const { name, description, color } = createTeamSchema.parse(body)
 
