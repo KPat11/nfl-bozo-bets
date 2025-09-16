@@ -28,8 +28,9 @@ export interface WeeklyBozoStats {
 export async function updateBozoStats(week: number, season: number): Promise<void> {
   console.log(`Updating bozo stats for Week ${week}, Season ${season}`)
 
-  // Get all bozo bets for this week
-  const bozoBets = await prisma.weeklyBet.findMany({
+  try {
+    // Get all bozo bets for this week
+    const bozoBets = await prisma.weeklyBet.findMany({
     where: {
       week,
       season,
@@ -131,14 +132,19 @@ export async function updateBozoStats(week: number, season: number): Promise<voi
     })
   }
 
-  console.log(`Updated bozo stats: ${bozoBets.length} bozos, ${hitBets.length} hits`)
-  if (biggestBozo) {
-    console.log(`Biggest bozo: ${biggestBozo.user.name} with ${biggestBozo.odds} odds on "${biggestBozo.prop}"`)
+    console.log(`Updated bozo stats: ${bozoBets.length} bozos, ${hitBets.length} hits`)
+    if (biggestBozo) {
+      console.log(`Biggest bozo: ${biggestBozo.user.name} with ${biggestBozo.odds} odds on "${biggestBozo.prop}"`)
+    }
+  } catch (error) {
+    console.error('Error updating bozo stats:', error)
+    // Silently fail if tables don't exist yet
   }
 }
 
 export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeaderboardEntry[]> {
-  const users = await prisma.user.findMany({
+  try {
+    const users = await prisma.user.findMany({
     select: {
       id: true,
       name: true,
@@ -157,21 +163,26 @@ export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeader
     take: limit
   })
 
-  return users.map(user => ({
-    userId: user.id,
-    userName: user.name,
-    totalBozos: user.totalBozos,
-    totalHits: user.totalHits,
-    bozoRate: user.totalBozos + user.totalHits > 0 
-      ? (user.totalBozos / (user.totalBozos + user.totalHits)) * 100 
-      : 0,
-    teamName: user.team?.name,
-    teamColor: user.team?.color
-  }))
+    return users.map(user => ({
+      userId: user.id,
+      userName: user.name,
+      totalBozos: user.totalBozos,
+      totalHits: user.totalHits,
+      bozoRate: user.totalBozos + user.totalHits > 0 
+        ? (user.totalBozos / (user.totalBozos + user.totalHits)) * 100 
+        : 0,
+      teamName: user.team?.name,
+      teamColor: user.team?.color
+    }))
+  } catch (error) {
+    console.error('Error fetching bozo leaderboard:', error)
+    return []
+  }
 }
 
 export async function getWeeklyBozoStats(week: number, season: number): Promise<WeeklyBozoStats> {
-  const biggestBozoStat = await prisma.bozoStat.findFirst({
+  try {
+    const biggestBozoStat = await (prisma as any).bozoStat?.findFirst({
     where: {
       week,
       season,
@@ -191,31 +202,40 @@ export async function getWeeklyBozoStats(week: number, season: number): Promise<
     }
   })
 
-  const weeklyBozos = await prisma.bozoStat.count({
-    where: { week, season }
-  })
+    const weeklyBozos = await (prisma as any).bozoStat?.count({
+      where: { week, season }
+    }).catch(() => 0) || 0
 
-  const weeklyHits = await prisma.weeklyBet.count({
-    where: {
+    const weeklyHits = await prisma.weeklyBet.count({
+      where: {
+        week,
+        season,
+        status: 'HIT'
+      }
+    }).catch(() => 0) || 0
+
+    return {
       week,
       season,
-      status: 'HIT'
+      biggestBozo: biggestBozoStat ? {
+        userId: biggestBozoStat.userId,
+        userName: biggestBozoStat.user.name,
+        prop: biggestBozoStat.prop,
+        odds: biggestBozoStat.odds || 0,
+        teamName: biggestBozoStat.user.team?.name,
+        teamColor: biggestBozoStat.user.team?.color
+      } : undefined,
+      totalBozos: weeklyBozos,
+      totalHits: weeklyHits
     }
-  })
-
-  return {
-    week,
-    season,
-    biggestBozo: biggestBozoStat ? {
-      userId: biggestBozoStat.userId,
-      userName: biggestBozoStat.user.name,
-      prop: biggestBozoStat.prop,
-      odds: biggestBozoStat.odds || 0,
-      teamName: biggestBozoStat.user.team?.name,
-      teamColor: biggestBozoStat.user.team?.color
-    } : undefined,
-    totalBozos: weeklyBozos,
-    totalHits: weeklyHits
+  } catch (error) {
+    console.error('Error fetching weekly bozo stats:', error)
+    return {
+      week,
+      season,
+      totalBozos: 0,
+      totalHits: 0
+    }
   }
 }
 

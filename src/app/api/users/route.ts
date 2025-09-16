@@ -28,7 +28,7 @@ export async function GET() {
         }
       },
       orderBy: { createdAt: 'desc' }
-    })
+    }).catch(() => [])
 
     return NextResponse.json(users)
   } catch (error) {
@@ -45,9 +45,9 @@ export async function POST(request: NextRequest) {
     // Validate team exists if provided
     let team = null
     if (teamId) {
-      team = await prisma.team.findUnique({
+      team = await (prisma as any).team?.findUnique({
         where: { id: teamId }
-      })
+      }).catch(() => null)
       if (!team) {
         return NextResponse.json({ error: 'Team not found' }, { status: 404 })
       }

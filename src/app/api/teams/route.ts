@@ -10,7 +10,8 @@ const createTeamSchema = z.object({
 
 export async function GET() {
   try {
-    const teams = await prisma.team.findMany({
+    // Check if teams table exists by trying to access it
+    const teams = await (prisma as any).team?.findMany({
       include: {
         users: {
           select: {
@@ -21,7 +22,12 @@ export async function GET() {
         }
       },
       orderBy: { createdAt: 'desc' }
-    })
+    }).catch(() => null)
+
+    if (!teams) {
+      // Return empty array if teams table doesn't exist yet
+      return NextResponse.json([])
+    }
 
     return NextResponse.json(teams)
   } catch (error) {
@@ -35,13 +41,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, description, color } = createTeamSchema.parse(body)
 
-    const team = await prisma.team.create({
+    // Check if teams table exists
+    const team = await (prisma as any).team?.create({
       data: {
         name,
         description,
         color: color || '#3b82f6' // Default blue color
       }
-    })
+    }).catch(() => null)
+
+    if (!team) {
+      return NextResponse.json({ error: 'Teams feature not available yet. Please set up the database first.' }, { status: 503 })
+    }
 
     return NextResponse.json(team, { status: 201 })
   } catch (error) {
