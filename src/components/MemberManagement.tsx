@@ -252,7 +252,7 @@ export default function MemberManagement({ onMemberUpdated }: MemberManagementPr
                     </div>
                     <div>
                       <h4 className="font-medium text-white">{user.name}</h4>
-                      <p className="text-sm text-gray-400">{user.email}</p>
+                      {/* <p className="text-sm text-gray-400">{user.email}</p> */}
                     </div>
                   </div>
                   <button

@@ -18,7 +18,7 @@ interface AddMemberModalProps {
 export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMemberModalProps) {
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    // email: '', // Commented out for now
     teamId: ''
   })
   const [teams, setTeams] = useState<{ id: string; name: string; color?: string }[]>([])
@@ -56,19 +56,20 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
       return
     }
 
-    if (!formData.email.trim()) {
-      setError('Email is required')
-      setLoading(false)
-      return
-    }
+    // Email validation commented out for now
+    // if (!formData.email.trim()) {
+    //   setError('Email is required')
+    //   setLoading(false)
+    //   return
+    // }
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address')
-      setLoading(false)
-      return
-    }
+    // // Email validation
+    // const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    // if (!emailRegex.test(formData.email)) {
+    //   setError('Please enter a valid email address')
+    //   setLoading(false)
+    //   return
+    // }
 
     // Team validation
     if (!formData.teamId) {
@@ -94,10 +95,10 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
         throw new Error(errorData.error || 'Failed to add member')
       }
 
-              setSuccess('Member added successfully! Welcome email sent.')
+              setSuccess('Member added successfully!')
               
               // Reset form
-              setFormData({ name: '', email: '', teamId: '' })
+              setFormData({ name: '', teamId: '' })
       
       // Close modal after a short delay
       setTimeout(() => {
@@ -152,7 +153,8 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
             </div>
           </div>
 
-          <div>
+          {/* Email field commented out for now */}
+          {/* <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Email *
             </label>
@@ -168,7 +170,7 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
                 placeholder="Enter email address"
               />
             </div>
-          </div>
+          </div> */}
 
 
           <div>

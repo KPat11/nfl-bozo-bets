@@ -5,7 +5,7 @@ import { z } from 'zod'
 // import { sendWelcomeEmail } from '@/lib/email'
 
 const createUserSchema = z.object({
-  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  // email: z.string().email('Invalid email address').toLowerCase().trim(), // Commented out for now
   name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
   teamId: z.string().optional()
 })
@@ -71,7 +71,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Creating user with data:', body)
     
-    const { email, name, teamId } = createUserSchema.parse(body)
+    const { name, teamId } = createUserSchema.parse(body)
+    // Generate a default email since email field is commented out
+    const email = `${name.toLowerCase().replace(/\s+/g, '.')}@nflbozobets.local`
     console.log('Parsed user data:', { email, name, teamId })
 
     // Validate team exists if provided

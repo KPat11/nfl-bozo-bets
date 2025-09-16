@@ -285,7 +285,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 <option value="">Select a member</option>
                 {users.map(user => (
                   <option key={user.id} value={user.id}>
-                    {user.name} ({user.email})
+                    {user.name}
                   </option>
                 ))}
               </select>
