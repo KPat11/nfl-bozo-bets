@@ -12,6 +12,7 @@ interface User {
   name: string
   email: string
   phone?: string
+  teamId?: string
   totalBozos: number
   totalHits: number
   team?: {

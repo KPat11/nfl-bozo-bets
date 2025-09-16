@@ -37,16 +37,7 @@ export async function updateBozoStats(week: number, season: number): Promise<voi
       status: 'BOZO'
     },
     include: {
-      user: {
-        include: {
-          team: {
-            select: {
-              name: true,
-              color: true
-            }
-          }
-        }
-      }
+      user: true
     }
   })
 
@@ -145,35 +136,58 @@ export async function updateBozoStats(week: number, season: number): Promise<voi
 export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeaderboardEntry[]> {
   try {
     const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      totalBozos: true,
-      totalHits: true,
-      team: {
-        select: {
-          name: true,
-          color: true
+      select: {
+        id: true,
+        name: true,
+        totalBozos: true,
+        totalHits: true,
+        teamId: true
+      },
+      orderBy: {
+        totalBozos: 'desc'
+      },
+      take: limit
+    })
+
+    // Fetch team data separately for users who have teamId
+    const usersWithTeams = await Promise.all(users.map(async (user) => {
+      let teamName = null
+      let teamColor = null
+      
+      if (user.teamId) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const team = await (prisma as any).team?.findUnique({
+            where: { id: user.teamId },
+            select: {
+              name: true,
+              color: true
+            }
+          }).catch(() => null)
+          
+          if (team) {
+            teamName = team.name
+            teamColor = team.color
+          }
+        } catch (error) {
+          console.log('Error fetching team data:', error)
         }
       }
-    },
-    orderBy: {
-      totalBozos: 'desc'
-    },
-    take: limit
-  })
 
-    return users.map(user => ({
-      userId: user.id,
-      userName: user.name,
-      totalBozos: user.totalBozos,
-      totalHits: user.totalHits,
-      bozoRate: user.totalBozos + user.totalHits > 0 
-        ? (user.totalBozos / (user.totalBozos + user.totalHits)) * 100 
-        : 0,
-      teamName: user.team?.name,
-      teamColor: user.team?.color
+      return {
+        userId: user.id,
+        userName: user.name,
+        totalBozos: user.totalBozos,
+        totalHits: user.totalHits,
+        bozoRate: user.totalBozos + user.totalHits > 0 
+          ? (user.totalBozos / (user.totalBozos + user.totalHits)) * 100 
+          : 0,
+        teamName,
+        teamColor
+      }
     }))
+
+    return usersWithTeams
   } catch (error) {
     console.error('Error fetching bozo leaderboard:', error)
     return []
@@ -190,16 +204,7 @@ export async function getWeeklyBozoStats(week: number, season: number): Promise<
       isBiggestBozo: true
     },
     include: {
-      user: {
-        include: {
-          team: {
-            select: {
-              name: true,
-              color: true
-            }
-          }
-        }
-      }
+      user: true
     }
   })
 
@@ -216,17 +221,48 @@ export async function getWeeklyBozoStats(week: number, season: number): Promise<
       }
     }).catch(() => 0) || 0
 
-    return {
-      week,
-      season,
-      biggestBozo: biggestBozoStat ? {
+    // Get team data for biggest bozo if available
+    let biggestBozo = undefined
+    if (biggestBozoStat) {
+      let teamName = null
+      let teamColor = null
+      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((biggestBozoStat.user as any).teamId) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const team = await (prisma as any).team?.findUnique({
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            where: { id: (biggestBozoStat.user as any).teamId },
+            select: {
+              name: true,
+              color: true
+            }
+          }).catch(() => null)
+          
+          if (team) {
+            teamName = team.name
+            teamColor = team.color
+          }
+        } catch (error) {
+          console.log('Error fetching team data for biggest bozo:', error)
+        }
+      }
+
+      biggestBozo = {
         userId: biggestBozoStat.userId,
         userName: biggestBozoStat.user.name,
         prop: biggestBozoStat.prop,
         odds: biggestBozoStat.odds || 0,
-        teamName: biggestBozoStat.user.team?.name,
-        teamColor: biggestBozoStat.user.team?.color
-      } : undefined,
+        teamName,
+        teamColor
+      }
+    }
+
+    return {
+      week,
+      season,
+      biggestBozo,
       totalBozos: weeklyBozos,
       totalHits: weeklyHits
     }
@@ -257,16 +293,7 @@ export async function getBiggestBozosByWeek(season: number): Promise<Array<{
       isBiggestBozo: true
     },
     include: {
-      user: {
-        include: {
-          team: {
-            select: {
-              name: true,
-              color: true
-            }
-          }
-        }
-      }
+      user: true
     },
     orderBy: {
       week: 'asc'
@@ -279,8 +306,10 @@ export async function getBiggestBozosByWeek(season: number): Promise<Array<{
       userName: stat.user.name,
       prop: stat.prop,
       odds: stat.odds || 0,
-      teamName: stat.user.team?.name,
-      teamColor: stat.user.team?.color
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      teamName: (stat.user as any).team?.name || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      teamColor: (stat.user as any).team?.color || null
     }
   }))
 }
