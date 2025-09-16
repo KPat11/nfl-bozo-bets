@@ -16,8 +16,8 @@ interface User {
   email: string
   phone?: string
   teamId?: string
-  totalBozos: number
-  totalHits: number
+  totalBozos?: number
+  totalHits?: number
   team?: {
     id: string
     name: string
@@ -183,7 +183,7 @@ export default function Home() {
   }
 
   const getTotalBozos = () => {
-    return users.reduce((total, user) => total + user.totalBozos, 0)
+    return users.reduce((total, user) => total + (user.totalBozos || 0), 0)
   }
 
   // Removed unused functions - they're not needed in the main component

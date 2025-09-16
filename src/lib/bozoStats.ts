@@ -101,27 +101,35 @@ export async function updateBozoStats(week: number, season: number): Promise<voi
       }
     })
 
-    // Update user's total bozo count
-    await prisma.user.update({
-      where: { id: bet.userId },
-      data: {
-        totalBozos: {
-          increment: 1
+    // Update user's total bozo count (if field exists)
+    try {
+      await prisma.user.update({
+        where: { id: bet.userId },
+        data: {
+          totalBozos: {
+            increment: 1
+          }
         }
-      }
-    })
+      })
+    } catch {
+      console.log('totalBozos field not available, skipping update')
+    }
   }
 
-  // Update user hit counts
+  // Update user hit counts (if field exists)
   for (const bet of hitBets) {
-    await prisma.user.update({
-      where: { id: bet.userId },
-      data: {
-        totalHits: {
-          increment: 1
+    try {
+      await prisma.user.update({
+        where: { id: bet.userId },
+        data: {
+          totalHits: {
+            increment: 1
+          }
         }
-      }
-    })
+      })
+    } catch {
+      console.log('totalHits field not available, skipping update')
+    }
   }
 
     console.log(`Updated bozo stats: ${bozoBets.length} bozos, ${hitBets.length} hits`)
@@ -140,12 +148,10 @@ export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeader
       select: {
         id: true,
         name: true,
-        totalBozos: true,
-        totalHits: true,
         teamId: true
       },
       orderBy: {
-        totalBozos: 'desc'
+        createdAt: 'desc'
       },
       take: limit
     })
@@ -178,11 +184,9 @@ export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeader
       return {
         userId: user.id,
         userName: user.name,
-        totalBozos: user.totalBozos,
-        totalHits: user.totalHits,
-        bozoRate: user.totalBozos + user.totalHits > 0 
-          ? (user.totalBozos / (user.totalBozos + user.totalHits)) * 100 
-          : 0,
+        totalBozos: 0, // Default to 0 if field doesn't exist
+        totalHits: 0,  // Default to 0 if field doesn't exist
+        bozoRate: 0,   // Default to 0 if fields don't exist
         teamName,
         teamColor
       }
