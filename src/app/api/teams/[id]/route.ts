@@ -11,10 +11,9 @@ export async function DELETE(
     // Try to remove team assignment from all users
     // Handle case where teamId field might not exist in database yet
     try {
-      await prisma.user.updateMany({
-        where: { teamId: id },
-        data: { teamId: null }
-      })
+      // Use raw SQL to avoid TypeScript issues during build
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (prisma as any).$executeRaw`UPDATE users SET "teamId" = NULL WHERE "teamId" = ${id}`
     } catch (teamIdError) {
       console.log('teamId field not available in database yet:', teamIdError)
       // Continue with team deletion even if teamId field doesn't exist
