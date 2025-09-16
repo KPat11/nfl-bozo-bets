@@ -149,8 +149,7 @@ export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeader
     const users = await prisma.user.findMany({
       select: {
         id: true,
-        name: true,
-        teamId: true
+        name: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -158,40 +157,15 @@ export async function getBozoLeaderboard(limit: number = 10): Promise<BozoLeader
       take: limit
     })
 
-    // Fetch team data separately for users who have teamId
-    const usersWithTeams = await Promise.all(users.map(async (user) => {
-      let teamName = null
-      let teamColor = null
-      
-      if (user.teamId) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const team = await (prisma as any).team?.findUnique({
-            where: { id: user.teamId },
-            select: {
-              name: true,
-              color: true
-            }
-          }).catch(() => null)
-          
-          if (team) {
-            teamName = team.name
-            teamColor = team.color
-          }
-        } catch (error) {
-          console.log('Error fetching team data:', error)
-        }
-      }
-
-      return {
-        userId: user.id,
-        userName: user.name,
-        totalBozos: 0, // Default to 0 if field doesn't exist
-        totalHits: 0,  // Default to 0 if field doesn't exist
-        bozoRate: 0,   // Default to 0 if fields don't exist
-        teamName,
-        teamColor
-      }
+    // Return users with default values (teams not available yet)
+    const usersWithTeams = users.map((user) => ({
+      userId: user.id,
+      userName: user.name,
+      totalBozos: 0, // Default to 0 if field doesn't exist
+      totalHits: 0,  // Default to 0 if field doesn't exist
+      bozoRate: 0,   // Default to 0 if fields don't exist
+      teamName: undefined,
+      teamColor: undefined
     }))
 
     return usersWithTeams
