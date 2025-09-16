@@ -5,12 +5,15 @@ import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronR
 import AddMemberModal from '@/components/AddMemberModal'
 import SubmitBetModal from '@/components/SubmitBetModal'
 import TeamsSection from '@/components/TeamsSection'
+import BozoLeaderboard from '@/components/BozoLeaderboard'
 
 interface User {
   id: string
   name: string
   email: string
   phone?: string
+  totalBozos: number
+  totalHits: number
   team?: {
     id: string
     name: string
@@ -45,7 +48,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'bets' | 'teams'>('bets')
+  const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos'>('bets')
 
   useEffect(() => {
     fetchUsers()
@@ -104,6 +107,24 @@ export default function Home() {
 
   const getBozoBets = () => {
     return getCurrentWeekBets().filter(bet => bet.status === 'BOZO')
+  }
+
+  const getTotalBozos = () => {
+    return users.reduce((total, user) => total + user.totalBozos, 0)
+  }
+
+  const getTotalHits = () => {
+    return users.reduce((total, user) => total + user.totalHits, 0)
+  }
+
+  const updateBozoStats = async () => {
+    try {
+      await fetch(`/api/bozo-stats?week=${currentWeek}&season=${currentSeason}`, {
+        method: 'POST'
+      })
+    } catch (error) {
+      console.error('Error updating bozo stats:', error)
+    }
   }
 
   if (loading) {
@@ -194,6 +215,16 @@ export default function Home() {
           >
             Teams & Groups
           </button>
+          <button
+            onClick={() => setActiveTab('bozos')}
+            className={`px-6 py-3 rounded-md font-medium transition-colors ${
+              activeTab === 'bozos'
+                ? 'bg-red-600 text-white'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            🤡 Bozo Stats
+          </button>
         </div>
       </div>
 
@@ -244,10 +275,23 @@ export default function Home() {
                 <Trophy className="h-8 w-8 text-purple-400" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-400">Hits vs Bozos</p>
+                <p className="text-sm font-medium text-gray-400">Week {currentWeek} Hits vs Bozos</p>
                 <p className="text-3xl font-bold text-white">
                   {getHitBets().length} / {getBozoBets().length}
                 </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-gray-800 rounded-xl shadow-xl p-6 border border-gray-700 hover:border-red-500 transition-colors">
+            <div className="flex items-center">
+              <div className="p-3 rounded-lg bg-red-500/20">
+                <Trophy className="h-8 w-8 text-red-400" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-400">All-Time Bozos</p>
+                <p className="text-3xl font-bold text-white">{getTotalBozos()}</p>
+              </div>
             </div>
           </div>
         </>
@@ -255,6 +299,10 @@ export default function Home() {
 
         {activeTab === 'teams' && (
           <TeamsSection onTeamCreated={fetchUsers} />
+        )}
+
+        {activeTab === 'bozos' && (
+          <BozoLeaderboard currentWeek={currentWeek} currentSeason={currentSeason} />
         )}
       </div>
 
@@ -330,7 +378,13 @@ export default function Home() {
                                   </span>
                                 )}
                               </div>
-                              <div className="text-sm text-gray-400">{user?.email}</div>
+                              <div className="flex items-center space-x-4 text-sm text-gray-400">
+                                <span>{user?.email}</span>
+                                <span>•</span>
+                                <span className="text-red-400">{user?.totalBozos || 0} bozos</span>
+                                <span>•</span>
+                                <span className="text-green-400">{user?.totalHits || 0} hits</span>
+                              </div>
                             </div>
                           </div>
                         </td>

@@ -16,6 +16,8 @@ model User {
   name      String
   phone     String?
   teamId    String?
+  totalBozos Int     @default(0)  // Total bozo count
+  totalHits  Int     @default(0)  // Total hits count
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -23,6 +25,7 @@ model User {
   weeklyBets WeeklyBet[]
   payments   Payment[]
   team       Team?    @relation(fields: [teamId], references: [id])
+  bozoStats  BozoStat[]
 
   @@map("users")
 }
@@ -110,6 +113,23 @@ model FanduelProp {
   updatedAt   DateTime @updatedAt
 
   @@map("fanduel_props")
+}
+
+model BozoStat {
+  id          String   @id @default(cuid())
+  userId      String
+  week        Int
+  season      Int
+  isBiggestBozo Boolean @default(false)  // True if this was the biggest bozo of the week
+  odds        Float?   // The odds that were bozo'd
+  prop        String   // The prop that was bozo'd
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, week, season]) // One bozo stat per user per week
+  @@map("bozo_stats")
 }
 
 enum PropStatus {

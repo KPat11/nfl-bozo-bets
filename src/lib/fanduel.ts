@@ -1,4 +1,5 @@
 import { prisma } from './db'
+import { updateBozoStats } from './bozoStats'
 
 export interface FanDuelProp {
   id: string
@@ -133,19 +134,22 @@ export async function updatePropResults(week: number, season: number): Promise<v
       }
     })
 
-    // Update associated weekly bets
-    await prisma.weeklyBet.updateMany({
-      where: { 
-        fanduelId: prop.fanduelId,
-        week,
-        season
-      },
-      data: { 
-        status: mockResult as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED'
-      }
-    })
-  }
-}
+            // Update associated weekly bets
+            await prisma.weeklyBet.updateMany({
+              where: {
+                fanduelId: prop.fanduelId,
+                week,
+                season
+              },
+              data: { 
+                status: mockResult as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED'
+              }
+            })
+          }
+
+          // Update bozo statistics after all props are updated
+          await updateBozoStats(week, season)
+        }
 
 export async function getAvailableProps(week: number, season: number): Promise<FanDuelProp[]> {
   const props = await prisma.fanduelProp.findMany({
