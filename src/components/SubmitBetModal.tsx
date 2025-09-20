@@ -262,20 +262,40 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     setLoading(true)
     setError('')
 
+    console.log('Submitting bet with form data:', formData)
+    console.log('Week:', week, 'Season:', season)
+
+    // Basic validation
+    if (!formData.userId) {
+      setError('Please select a team member')
+      setLoading(false)
+      return
+    }
+    
+    if (!formData.prop.trim()) {
+      setError('Please enter a prop bet')
+      setLoading(false)
+      return
+    }
+
     try {
+      const submitData = {
+        ...formData,
+        week,
+        season,
+        odds: formData.odds ? parseFloat(formData.odds) : undefined,
+        fanduelId: formData.fanduelId || undefined,
+        betType: formData.betType
+      }
+      
+      console.log('Submit data:', submitData)
+
       const response = await fetch('/api/weekly-bets', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          week,
-          season,
-          odds: formData.odds ? parseFloat(formData.odds) : undefined,
-          fanduelId: formData.fanduelId || undefined,
-          betType: formData.betType
-        }),
+        body: JSON.stringify(submitData),
       })
 
       if (!response.ok) {
@@ -352,6 +372,16 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          {/* Debug Display */}
+          <div className="bg-gray-700 p-3 rounded-lg text-xs text-gray-300">
+            <div className="font-semibold mb-2">Debug Info:</div>
+            <div>Bet Type: {formData.betType}</div>
+            <div>User ID: {formData.userId}</div>
+            <div>Prop: {formData.prop}</div>
+            <div>Odds: {formData.odds}</div>
+            <div>Available Users: {getFilteredUsers().length}</div>
+          </div>
+
           {/* Bet Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -360,7 +390,10 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, betType: 'BOZO' }))}
+                onClick={() => {
+                  console.log('Setting bet type to BOZO')
+                  setFormData(prev => ({ ...prev, betType: 'BOZO' }))
+                }}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   formData.betType === 'BOZO'
                     ? 'border-red-500 bg-red-900/20 text-red-200'
@@ -374,7 +407,10 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               </button>
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, betType: 'FAVORITE' }))}
+                onClick={() => {
+                  console.log('Setting bet type to FAVORITE')
+                  setFormData(prev => ({ ...prev, betType: 'FAVORITE' }))
+                }}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   formData.betType === 'FAVORITE'
                     ? 'border-green-500 bg-green-900/20 text-green-200'
@@ -562,6 +598,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 onClick={() => {
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = Math.max(currentOdds - 0.5, -50)
+                  console.log('Decreasing odds from', currentOdds, 'to', newOdds)
                   setFormData(prev => ({ ...prev, odds: newOdds.toString() }))
                 }}
                 className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
@@ -589,6 +626,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 onClick={() => {
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = Math.min(currentOdds + 0.5, 50)
+                  console.log('Increasing odds from', currentOdds, 'to', newOdds)
                   setFormData(prev => ({ ...prev, odds: newOdds.toString() }))
                 }}
                 className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
