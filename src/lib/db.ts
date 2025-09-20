@@ -10,7 +10,7 @@ const createMockPrismaClient = (): PrismaClient => {
     user: {
       findMany: async () => [],
       findUnique: async () => null,
-      create: async (data: any) => {
+      create: async (data: { data: Record<string, unknown> }) => {
         console.log('Mock: Creating user with data:', data)
         return {
           id: 'mock-user-id',
@@ -29,7 +29,7 @@ const createMockPrismaClient = (): PrismaClient => {
     team: {
       findMany: async () => [],
       findUnique: async () => null,
-      create: async (data: any) => {
+      create: async (data: { data: Record<string, unknown> }) => {
         console.log('Mock: Creating team with data:', data)
         return {
           id: 'mock-team-id',
@@ -105,6 +105,7 @@ const testPrismaClient = async (client: PrismaClient): Promise<boolean> => {
     const requiredModels = ['user', 'team', 'weeklyBet', 'payment', 'notification', 'fanduelProp', 'bozoStat']
     
     for (const model of requiredModels) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (!(model in client) || typeof (client as any)[model]?.findMany !== 'function') {
         console.log(`❌ Model ${model} not available in Prisma client`)
         return false
@@ -112,6 +113,7 @@ const testPrismaClient = async (client: PrismaClient): Promise<boolean> => {
     }
     
     // Test a simple query to ensure database connection works
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await (client as any).user.findMany({ take: 1 })
     console.log('✅ All Prisma models are available and working')
     return true

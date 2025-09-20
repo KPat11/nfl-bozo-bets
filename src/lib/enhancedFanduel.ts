@@ -280,8 +280,8 @@ export async function findMatchingProp(
 
 export async function getLiveOddsForProp(
   fanduelId: string,
-  week: number,
-  season: number
+  _week: number,
+  _season: number
 ): Promise<{ odds: number; overOdds: number; underOdds: number } | null> {
   try {
     // Try database first
