@@ -77,8 +77,12 @@ export default function Home() {
       setUsers(userData)
       
       // Set first user as current user (in a real app, this would be from authentication)
-      if (userData.length > 0 && !currentUser) {
+      if (userData.length > 0) {
+        console.log('Setting current user to:', userData[0])
         setCurrentUser(userData[0])
+      } else {
+        console.log('No users found, setting currentUser to null')
+        setCurrentUser(null)
       }
     } catch (error) {
       console.error('Error fetching users:', error)
