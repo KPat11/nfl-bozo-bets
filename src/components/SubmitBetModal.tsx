@@ -8,6 +8,19 @@ interface User {
   id: string
   name: string
   email: string
+  teamId?: string
+}
+
+interface Team {
+  id: string
+  name: string
+  description?: string
+  color?: string
+  users: Array<{
+    id: string
+    name: string
+    email: string
+  }>
 }
 
 interface FanDuelProp {
@@ -31,9 +44,11 @@ interface SubmitBetModalProps {
 
 export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season }: SubmitBetModalProps) {
   const [users, setUsers] = useState<User[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
   const [formData, setFormData] = useState({
     userId: '',
+    teamId: '',
     prop: '',
     odds: '',
     fanduelId: ''
@@ -69,6 +84,18 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     } catch (error) {
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
+    }
+  }, [])
+
+  const fetchTeams = useCallback(async () => {
+    try {
+      const response = await fetch('/api/teams')
+      const data = await response.json()
+      console.log('Fetched teams:', data) // Debug log
+      setTeams(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching teams:', error)
+      setTeams([]) // Set empty array on error
     }
   }, [])
 
@@ -157,6 +184,14 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   } | null>(null)
 
+  // Get filtered users based on selected team
+  const getFilteredUsers = () => {
+    if (!formData.teamId) {
+      return users
+    }
+    return users.filter(user => user.teamId === formData.teamId)
+  }
+
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setFormData(prev => ({ ...prev, prop: value }))
@@ -181,7 +216,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   useEffect(() => {
     if (isOpen) {
       // Reset form when modal opens
-      setFormData({ userId: '', prop: '', odds: '', fanduelId: '' })
+      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '' })
       setError('')
       setPropMatchResult(null)
       setSearchSuggestions([])
@@ -191,6 +226,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       setWeekValidation(validation)
       
       fetchUsers()
+      fetchTeams()
       fetchFanDuelProps()
       
       // Start live odds updates every 30 seconds
@@ -210,7 +246,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval, week, season])
+  }, [isOpen, fetchUsers, fetchTeams, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval, week, season])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -238,7 +274,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       }
 
       // Reset form and close modal
-      setFormData({ userId: '', prop: '', odds: '', fanduelId: '' })
+      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '' })
       onBetSubmitted()
       onClose()
     } catch (err) {
@@ -306,6 +342,37 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+          {/* Team Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Team/Group (Optional)
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <select
+                name="teamId"
+                value={formData.teamId}
+                onChange={(e) => {
+                  console.log('Team selection changed:', e.target.value)
+                  setFormData(prev => ({
+                    ...prev,
+                    [e.target.name]: e.target.value,
+                    userId: '' // Reset member selection when team changes
+                  }))
+                }}
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              >
+                <option value="">All members</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} ({team.users.length} members)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Member Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Member *
@@ -326,7 +393,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <option value="">Select a member</option>
-                {users.map(user => (
+                {getFilteredUsers().map(user => (
                   <option key={user.id} value={user.id}>
                     {user.name}
                   </option>

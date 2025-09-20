@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { X, Save, Loader2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { X, Save, Loader2, UserPlus, UserMinus, Users } from 'lucide-react'
 
 interface Team {
   id: string
@@ -13,6 +13,13 @@ interface Team {
     name: string
     email: string
   }>
+}
+
+interface User {
+  id: string
+  name: string
+  email: string
+  teamId?: string
 }
 
 interface EditTeamModalProps {
@@ -43,6 +50,36 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [allUsers, setAllUsers] = useState<User[]>([])
+  const [teamMembers, setTeamMembers] = useState<User[]>([])
+  const [availableUsers, setAvailableUsers] = useState<User[]>([])
+  const [memberLoading, setMemberLoading] = useState(false)
+
+  // Fetch all users
+  const fetchAllUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      const users = await response.json()
+      setAllUsers(Array.isArray(users) ? users : [])
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      setAllUsers([])
+    }
+  }
+
+  // Update team members and available users
+  const updateMemberLists = React.useCallback(() => {
+    if (!team) return
+
+    const members = team.users || []
+    const available = allUsers.filter(user => 
+      !members.some(member => member.id === user.id) && 
+      (user.teamId === null || user.teamId === undefined || user.teamId !== team.id)
+    )
+
+    setTeamMembers(members)
+    setAvailableUsers(available)
+  }, [team, allUsers])
 
   // Update form data when team changes
   React.useEffect(() => {
@@ -52,8 +89,16 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
         description: team.description || '',
         color: team.color || '#3b82f6'
       })
+      updateMemberLists()
     }
-  }, [team])
+  }, [team, allUsers, updateMemberLists])
+
+  // Fetch users when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchAllUsers()
+    }
+  }, [isOpen])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -61,6 +106,70 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
       ...prev,
       [name]: value
     }))
+  }
+
+  // Add member to team
+  const handleAddMember = async (userId: string) => {
+    if (!team) return
+
+    setMemberLoading(true)
+    try {
+      const response = await fetch(`/api/teams/${team.id}/members`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to add member to team')
+      }
+
+      // Update local state
+      const addedUser = allUsers.find(user => user.id === userId)
+      if (addedUser) {
+        setTeamMembers(prev => [...prev, addedUser])
+        setAvailableUsers(prev => prev.filter(user => user.id !== userId))
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add member to team')
+    } finally {
+      setMemberLoading(false)
+    }
+  }
+
+  // Remove member from team
+  const handleRemoveMember = async (userId: string) => {
+    if (!team) return
+
+    setMemberLoading(true)
+    try {
+      const response = await fetch(`/api/teams/${team.id}/members`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to remove member from team')
+      }
+
+      // Update local state
+      const removedUser = teamMembers.find(member => member.id === userId)
+      if (removedUser) {
+        setTeamMembers(prev => prev.filter(member => member.id !== userId))
+        setAvailableUsers(prev => [...prev, removedUser])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member from team')
+    } finally {
+      setMemberLoading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -179,6 +288,79 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
               ></div>
               <span className="text-sm text-gray-400">Selected color</span>
             </div>
+          </div>
+
+          {/* Team Members Management */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-gray-400" />
+              <h3 className="text-lg font-semibold text-white">Team Members</h3>
+            </div>
+
+            {/* Current Members */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">
+                Current Members ({teamMembers.length})
+              </h4>
+              {teamMembers.length === 0 ? (
+                <p className="text-gray-400 text-sm">No members in this team</p>
+              ) : (
+                <div className="space-y-2">
+                  {teamMembers.map(member => (
+                    <div
+                      key={member.id}
+                      className="flex items-center justify-between bg-gray-700 rounded-lg p-3"
+                    >
+                      <div>
+                        <p className="text-white font-medium">{member.name}</p>
+                        <p className="text-gray-400 text-sm">{member.email}</p>
+                      </div>
+                      <button
+                        onClick={() => handleRemoveMember(member.id)}
+                        disabled={memberLoading}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+                        title="Remove from team"
+                      >
+                        <UserMinus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Available Users to Add */}
+            {availableUsers.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-2">
+                  Available Members ({availableUsers.length})
+                </h4>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {availableUsers.map(user => (
+                    <div
+                      key={user.id}
+                      className="flex items-center justify-between bg-gray-700 rounded-lg p-3"
+                    >
+                      <div>
+                        <p className="text-white font-medium">{user.name}</p>
+                        <p className="text-gray-400 text-sm">{user.email}</p>
+                        {user.teamId && (
+                          <p className="text-yellow-400 text-xs">Currently in another team</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleAddMember(user.id)}
+                        disabled={memberLoading || !!user.teamId}
+                        className="p-2 text-green-400 hover:text-green-300 hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={user.teamId ? "User is in another team" : "Add to team"}
+                      >
+                        <UserPlus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (
