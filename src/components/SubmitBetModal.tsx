@@ -188,10 +188,17 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   // Get filtered users based on current user's team (team-exclusive betting)
   const getFilteredUsers = () => {
+    console.log('Current user:', currentUser)
+    console.log('All users:', users)
+    
     if (!currentUser?.teamId) {
-      return []
+      console.log('No team assigned to current user, showing all users')
+      return users
     }
-    return users.filter(user => user.teamId === currentUser.teamId)
+    
+    const teamUsers = users.filter(user => user.teamId === currentUser.teamId)
+    console.log('Team users:', teamUsers)
+    return teamUsers
   }
 
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -363,7 +370,6 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 <div className="text-center">
                   <div className="text-2xl mb-1">🤡</div>
                   <div className="font-semibold">Bozo Bet</div>
-                  <div className="text-xs opacity-75">Risky pick</div>
                 </div>
               </button>
               <button
@@ -378,7 +384,6 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 <div className="text-center">
                   <div className="text-2xl mb-1">⭐</div>
                   <div className="font-semibold">Favorite Pick</div>
-                  <div className="text-xs opacity-75">Safe bet</div>
                 </div>
               </button>
             </div>
@@ -551,17 +556,48 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Odds (optional)
             </label>
-            <div className="relative">
-              <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="number"
-                name="odds"
-                value={formData.odds}
-                onChange={handleChange}
-                step="0.5"
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="e.g., -110, +150"
-              />
+            <div className="flex items-center space-x-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const currentOdds = parseFloat(formData.odds) || 0
+                  const newOdds = Math.max(currentOdds - 0.5, -50)
+                  setFormData(prev => ({ ...prev, odds: newOdds.toString() }))
+                }}
+                className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
+              >
+                <span className="text-lg">−</span>
+              </button>
+              
+              <div className="flex-1 relative">
+                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="number"
+                  name="odds"
+                  value={formData.odds}
+                  onChange={handleChange}
+                  step="0.5"
+                  min="-50"
+                  max="50"
+                  className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center"
+                  placeholder="0.0"
+                />
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => {
+                  const currentOdds = parseFloat(formData.odds) || 0
+                  const newOdds = Math.min(currentOdds + 0.5, 50)
+                  setFormData(prev => ({ ...prev, odds: newOdds.toString() }))
+                }}
+                className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
+              >
+                <span className="text-lg">+</span>
+              </button>
+            </div>
+            <div className="mt-2 text-xs text-gray-400 text-center">
+              Use buttons or type directly. Range: -50 to +50
             </div>
           </div>
 

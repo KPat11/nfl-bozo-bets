@@ -58,6 +58,7 @@ export default function Home() {
   const [showEditBetModal, setShowEditBetModal] = useState(false)
   const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos' | 'leaderboard' | 'management'>('bets')
+  const [recordView, setRecordView] = useState<'total' | 'bozo' | 'favorite'>('total')
   const [selectedBet, setSelectedBet] = useState<WeeklyBet | null>(null)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [biggestBozo, setBiggestBozo] = useState<{
@@ -215,6 +216,47 @@ export default function Home() {
 
   const getTotalBozos = () => {
     return users.reduce((total, user) => total + (user.totalBozos || 0), 0)
+  }
+
+  // Helper function to get status display with emojis
+  const getStatusDisplay = (bet: WeeklyBet) => {
+    if (bet.status === 'HIT') {
+      return 'HIT'
+    } else if (bet.status === 'BOZO') {
+      return 'BOZO'
+    } else if (bet.status === 'PUSH') {
+      return 'PUSH'
+    } else if (bet.status === 'CANCELLED') {
+      return 'CANCELLED'
+    } else {
+      // For PENDING status, show different emoji based on bet type
+      if (bet.betType === 'FAVORITE') {
+        return '🤔' // Confused face for missed favorite pick
+      } else {
+        return 'PENDING'
+      }
+    }
+  }
+
+  // Calculate running records
+  const getUserRecord = (user: User, type: 'total' | 'bozo' | 'favorite') => {
+    let bets = user.weeklyBets.filter(bet => bet.season === currentSeason)
+    
+    if (type === 'bozo') {
+      bets = bets.filter(bet => bet.betType === 'BOZO')
+    } else if (type === 'favorite') {
+      bets = bets.filter(bet => bet.betType === 'FAVORITE')
+    }
+    
+    const hits = bets.filter(bet => bet.status === 'HIT').length
+    const misses = bets.filter(bet => bet.status === 'BOZO').length
+    
+    return { hits, misses, total: hits + misses }
+  }
+
+  const getCurrentUserRecord = () => {
+    if (!currentUser) return { hits: 0, misses: 0, total: 0 }
+    return getUserRecord(currentUser, recordView)
   }
 
   // Removed unused functions - they're not needed in the main component
@@ -408,6 +450,55 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* Running Record Card */}
+          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-blue-500 transition-colors">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="p-2 sm:p-3 rounded-lg bg-blue-500/20">
+                  <Target className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
+                </div>
+                <div className="ml-3 sm:ml-4">
+                  <p className="text-xs sm:text-sm font-medium text-gray-400">Your Record</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-white">
+                    {getCurrentUserRecord().hits}-{getCurrentUserRecord().misses}
+                  </p>
+                </div>
+              </div>
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => setRecordView('total')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    recordView === 'total' 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  }`}
+                >
+                  Total
+                </button>
+                <button
+                  onClick={() => setRecordView('bozo')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    recordView === 'bozo' 
+                      ? 'bg-red-600 text-white' 
+                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  }`}
+                >
+                  Bozo
+                </button>
+                <button
+                  onClick={() => setRecordView('favorite')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    recordView === 'favorite' 
+                      ? 'bg-green-600 text-white' 
+                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                  }`}
+                >
+                  Fav
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
         </>
         )}
@@ -480,7 +571,7 @@ export default function Home() {
                                         bet.status === 'BOZO' ? 'bg-red-500/20 text-red-400' :
                                         'bg-yellow-500/20 text-yellow-400'
                                       }`}>
-                                        {bet.status}
+                                        {getStatusDisplay(bet)}
                                       </span>
                                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                         isPaid ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
@@ -624,7 +715,7 @@ export default function Home() {
                             bet.status === 'PUSH' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
                             'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                           }`}>
-                            {bet.status}
+                            {getStatusDisplay(bet)}
                           </span>
                         </td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -734,7 +825,7 @@ export default function Home() {
                                 bet.status === 'BOZO' ? 'bg-red-500/20 text-red-400' :
                                 'bg-yellow-500/20 text-yellow-400'
                               }`}>
-                                {bet.status}
+                                {getStatusDisplay(bet)}
                               </span>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 isPaid ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
@@ -866,7 +957,7 @@ export default function Home() {
                             bet.status === 'BOZO' ? 'bg-red-500/20 text-red-400' :
                             'bg-yellow-500/20 text-yellow-400'
                           }`}>
-                            {bet.status}
+                            {getStatusDisplay(bet)}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
