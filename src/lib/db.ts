@@ -152,16 +152,7 @@ try {
   isDatabaseAvailable = false
 }
 
-// Export a wrapper that provides the appropriate client
-export const prisma = new Proxy(prismaClient, {
-  get(target, prop) {
-    if (!isDatabaseAvailable && typeof prop === 'string') {
-      console.log(`Database not ready, using mock for ${prop}`)
-      const mockClient = createMockPrismaClient()
-      return mockClient[prop as keyof PrismaClient]
-    }
-    return target[prop as keyof PrismaClient]
-  }
-})
+// Export the Prisma client directly - let the API routes handle errors gracefully
+export const prisma = prismaClient
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma

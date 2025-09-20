@@ -12,12 +12,6 @@ export async function GET() {
   try {
     console.log('🔍 Fetching teams...')
     
-    // Check if prisma.team exists
-    if (!prisma.team) {
-      console.error('❌ prisma.team is not available')
-      return NextResponse.json([])
-    }
-    
     const teams = await prisma.team.findMany({
       include: {
         users: {
@@ -48,15 +42,6 @@ export async function POST(request: NextRequest) {
     const { name, description, color } = createTeamSchema.parse(body)
 
     console.log('📝 Team data:', { name, description, color })
-
-    // Check if prisma.team exists
-    if (!prisma.team) {
-      console.error('❌ prisma.team is not available')
-      return NextResponse.json({ 
-        error: 'Database schema not ready. Please try again in a moment.',
-        details: 'Team model not found in Prisma client'
-      }, { status: 503 })
-    }
 
     const team = await prisma.team.create({
       data: {
