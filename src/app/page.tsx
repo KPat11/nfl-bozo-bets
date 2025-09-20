@@ -104,6 +104,14 @@ export default function Home() {
     fetchUsers()
   }
 
+  const handleTeamCreated = () => {
+    fetchUsers()
+  }
+
+  const handleMemberUpdated = () => {
+    fetchUsers()
+  }
+
   const handleEditBet = (bet: WeeklyBet, user: User) => {
     setSelectedBet(bet)
     setSelectedUser(user)
@@ -148,6 +156,15 @@ export default function Home() {
   useEffect(() => {
     checkForBiggestBozo()
   }, [currentWeek, checkForBiggestBozo])
+
+  // Periodic refresh to keep data up-to-date
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      fetchUsers()
+    }, 30000) // Refresh every 30 seconds
+
+    return () => clearInterval(refreshInterval)
+  }, [])
 
   const goToPreviousWeek = () => {
     if (currentWeek > 1) {
@@ -383,7 +400,7 @@ export default function Home() {
         )}
 
         {activeTab === 'teams' && (
-          <TeamsSection onTeamCreated={fetchUsers} />
+          <TeamsSection onTeamCreated={handleTeamCreated} />
         )}
 
                 {activeTab === 'bozos' && (
@@ -395,7 +412,7 @@ export default function Home() {
                 )}
 
                 {activeTab === 'management' && (
-                  <MemberManagement onMemberUpdated={fetchUsers} />
+                  <MemberManagement onMemberUpdated={handleMemberUpdated} />
                 )}
       </div>
 

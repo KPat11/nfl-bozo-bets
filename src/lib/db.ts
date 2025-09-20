@@ -125,7 +125,6 @@ const testPrismaClient = async (client: PrismaClient): Promise<boolean> => {
 
 // Create Prisma client with enhanced error handling
 let prismaClient: PrismaClient
-let isDatabaseAvailable = false
 
 try {
   prismaClient = globalForPrisma.prisma ?? new PrismaClient({
@@ -135,7 +134,6 @@ try {
   // Test the client asynchronously
   testPrismaClient(prismaClient)
     .then((isWorking) => {
-      isDatabaseAvailable = isWorking
       if (isWorking) {
         console.log('✅ Database and Prisma client are working correctly')
       } else {
@@ -144,12 +142,10 @@ try {
     })
     .catch((error) => {
       console.error('❌ Database connection failed:', error.message)
-      isDatabaseAvailable = false
     })
 } catch (error) {
   console.error('Failed to create Prisma client:', error)
   prismaClient = createMockPrismaClient()
-  isDatabaseAvailable = false
 }
 
 // Export the Prisma client directly - let the API routes handle errors gracefully

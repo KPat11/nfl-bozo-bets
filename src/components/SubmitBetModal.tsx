@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, User, Target, DollarSign } from 'lucide-react'
+import { X, User, Target, DollarSign, Clock, AlertTriangle } from 'lucide-react'
+import { canSubmitBetForWeek } from '@/lib/nflWeekUtils'
 
 interface User {
   id: string
@@ -142,6 +143,19 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   }, [week, season])
 
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [weekValidation, setWeekValidation] = useState<{
+    canSubmit: boolean
+    reason?: string
+    currentWeek?: {
+      week: number
+      season: number
+      startDate: Date
+      endDate: Date
+      isActive: boolean
+      isPast: boolean
+      isFuture: boolean
+    }
+  } | null>(null)
 
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
@@ -172,6 +186,10 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       setPropMatchResult(null)
       setSearchSuggestions([])
       
+      // Validate NFL week
+      const validation = canSubmitBetForWeek(week, season)
+      setWeekValidation(validation)
+      
       fetchUsers()
       fetchFanDuelProps()
       
@@ -192,7 +210,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval])
+  }, [isOpen, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval, week, season])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -261,6 +279,31 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
         </div>
+
+        {/* NFL Week Validation */}
+        {weekValidation && (
+          <div className={`mb-4 sm:mb-6 p-3 rounded-lg border ${
+            weekValidation.canSubmit 
+              ? 'bg-green-900/50 border-green-500' 
+              : 'bg-red-900/50 border-red-500'
+          }`}>
+            <div className="flex items-center space-x-2">
+              {weekValidation.canSubmit ? (
+                <Clock className="h-4 w-4 text-green-400" />
+              ) : (
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+              )}
+              <span className={`text-sm font-medium ${
+                weekValidation.canSubmit ? 'text-green-200' : 'text-red-200'
+              }`}>
+                {weekValidation.canSubmit 
+                  ? `Week ${week} is currently active - you can submit bets!`
+                  : weekValidation.reason
+                }
+              </span>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
           <div>
@@ -454,7 +497,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !weekValidation?.canSubmit}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium order-1 sm:order-2"
             >
               {loading ? 'Submitting...' : 'Submit Bet'}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { canSubmitBetForWeek } from '@/lib/nflWeekUtils'
 
 const createWeeklyBetSchema = z.object({
   userId: z.string(),
@@ -43,6 +44,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { userId, week, season, prop, odds, fanduelId } = createWeeklyBetSchema.parse(body)
+
+    // Validate NFL week timing
+    const weekValidation = canSubmitBetForWeek(week, season)
+    if (!weekValidation.canSubmit) {
+      return NextResponse.json({ 
+        error: 'Cannot submit bet for this week',
+        reason: weekValidation.reason,
+        currentWeek: weekValidation.currentWeek
+      }, { status: 400 })
+    }
 
     // Check if user already has a bet for this week/season
     const existingBet = await prisma.weeklyBet.findUnique({

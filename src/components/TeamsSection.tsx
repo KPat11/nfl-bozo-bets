@@ -3,12 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Users, Plus, Trash2, Edit, CheckCircle } from 'lucide-react'
 import CreateTeamModal from './CreateTeamModal'
+import EditTeamModal from './EditTeamModal'
 
 interface Team {
   id: string
   name: string
   description?: string
   color?: string
+  createdAt: string
+  updatedAt: string
   users: Array<{
     id: string
     name: string
@@ -23,6 +26,8 @@ interface TeamsSectionProps {
 export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -70,6 +75,48 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create team')
       setSuccess('')
+    }
+  }
+
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team)
+    setShowEditModal(true)
+  }
+
+  const handleTeamUpdated = (updatedTeam: Team) => {
+    setTeams(teams.map(team => team.id === updatedTeam.id ? updatedTeam : team))
+    setShowEditModal(false)
+    setEditingTeam(null)
+    setSuccess(`Team "${updatedTeam.name}" updated successfully!`)
+    onTeamCreated()
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const handleDeleteTeam = async (teamId: string, teamName: string) => {
+    if (!confirm(`Are you sure you want to delete "${teamName}"? This will unassign all members from this team.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/teams/${teamId}`, {
+        method: 'DELETE'
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete team')
+      }
+
+      setTeams(teams.filter(team => team.id !== teamId))
+      setSuccess(`Team "${teamName}" deleted successfully!`)
+      onTeamCreated()
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete team')
     }
   }
 
@@ -138,10 +185,18 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
                     <h3 className="text-lg font-semibold text-white">{team.name}</h3>
                   </div>
                   <div className="flex space-x-1">
-                    <button className="p-1 text-gray-400 hover:text-white transition-colors">
+                    <button 
+                      onClick={() => handleEditTeam(team)}
+                      className="p-1 text-gray-400 hover:text-white transition-colors"
+                      title="Edit team"
+                    >
                       <Edit className="h-4 w-4" />
                     </button>
-                    <button className="p-1 text-gray-400 hover:text-red-400 transition-colors">
+                    <button 
+                      onClick={() => handleDeleteTeam(team.id, team.name)}
+                      className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                      title="Delete team"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -184,6 +239,16 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
           onCreateTeam={handleCreateTeam}
         />
       )}
+
+      <EditTeamModal
+        isOpen={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setEditingTeam(null)
+        }}
+        onTeamUpdated={handleTeamUpdated}
+        team={editingTeam}
+      />
     </div>
   )
 }

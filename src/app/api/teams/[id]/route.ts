@@ -1,5 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { z } from 'zod'
+
+const updateTeamSchema = z.object({
+  name: z.string().min(1, 'Team name is required').max(50, 'Team name too long'),
+  description: z.string().optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional()
+})
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    const { name, description, color } = updateTeamSchema.parse(body)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updatedTeam = await (prisma as any).team.update({
+      where: { id },
+      data: {
+        name,
+        description,
+        color: color || '#3b82f6',
+        updatedAt: new Date()
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json(updatedTeam)
+  } catch (error) {
+    console.error('Error updating team:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
+    }
+
+    if (error instanceof Error && error.message.includes('Unique constraint')) {
+      return NextResponse.json({ error: 'Team with this name already exists' }, { status: 409 })
+    }
+
+    return NextResponse.json({ error: 'Failed to update team' }, { status: 500 })
+  }
+}
 
 export async function DELETE(
   request: NextRequest,
