@@ -1,0 +1,82 @@
+{
+  "testSuites": {
+    "smoke": {
+      "name": "Smoke Tests",
+      "description": "Basic functionality verification",
+      "timeout": 30000,
+      "retries": 2
+    },
+    "api": {
+      "name": "API Tests", 
+      "description": "Backend endpoint functionality",
+      "timeout": 60000,
+      "retries": 1
+    },
+    "database": {
+      "name": "Database Tests",
+      "description": "Data integrity and schema validation", 
+      "timeout": 45000,
+      "retries": 1
+    },
+    "validation": {
+      "name": "Validation Tests",
+      "description": "Input validation and error handling",
+      "timeout": 30000,
+      "retries": 2
+    },
+    "performance": {
+      "name": "Performance Tests",
+      "description": "Load and response time testing",
+      "timeout": 60000,
+      "retries": 1
+    }
+  },
+  "environments": {
+    "development": {
+      "baseUrl": "http://localhost:3000",
+      "apiBase": "http://localhost:3000/api",
+      "timeout": 30000
+    },
+    "staging": {
+      "baseUrl": "https://staging.nflbozobets.com",
+      "apiBase": "https://staging.nflbozobets.com/api", 
+      "timeout": 45000
+    },
+    "production": {
+      "baseUrl": "https://nflbozobets.com",
+      "apiBase": "https://nflbozobets.com/api",
+      "timeout": 60000
+    }
+  },
+  "testData": {
+    "users": {
+      "count": 5,
+      "prefix": "TestUser"
+    },
+    "teams": {
+      "count": 3,
+      "prefix": "TestTeam"
+    },
+    "bets": {
+      "count": 10,
+      "weeks": [1, 2, 3],
+      "seasons": [2025]
+    }
+  },
+  "reporting": {
+    "outputDir": "./test-results",
+    "format": "markdown",
+    "includeScreenshots": false,
+    "includeLogs": true
+  },
+  "notifications": {
+    "email": {
+      "enabled": false,
+      "recipients": []
+    },
+    "slack": {
+      "enabled": false,
+      "webhook": ""
+    }
+  }
+}
