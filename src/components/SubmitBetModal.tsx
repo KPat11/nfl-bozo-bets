@@ -40,9 +40,10 @@ interface SubmitBetModalProps {
   onBetSubmitted: () => void
   week: number
   season: number
+  currentUser?: User
 }
 
-export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season }: SubmitBetModalProps) {
+export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser }: SubmitBetModalProps) {
   const [users, setUsers] = useState<User[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
@@ -51,7 +52,8 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     teamId: '',
     prop: '',
     odds: '',
-    fanduelId: ''
+    fanduelId: '',
+    betType: 'BOZO' as 'BOZO' | 'FAVORITE'
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -184,12 +186,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   } | null>(null)
 
-  // Get filtered users based on selected team
+  // Get filtered users based on current user's team (team-exclusive betting)
   const getFilteredUsers = () => {
-    if (!formData.teamId) {
-      return users
+    if (!currentUser?.teamId) {
+      return []
     }
-    return users.filter(user => user.teamId === formData.teamId)
+    return users.filter(user => user.teamId === currentUser.teamId)
   }
 
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -216,7 +218,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   useEffect(() => {
     if (isOpen) {
       // Reset form when modal opens
-      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '' })
+      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '', betType: 'BOZO' })
       setError('')
       setPropMatchResult(null)
       setSearchSuggestions([])
@@ -264,7 +266,8 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           week,
           season,
           odds: formData.odds ? parseFloat(formData.odds) : undefined,
-          fanduelId: formData.fanduelId || undefined
+          fanduelId: formData.fanduelId || undefined,
+          betType: formData.betType
         }),
       })
 
@@ -274,7 +277,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       }
 
       // Reset form and close modal
-      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '' })
+      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '', betType: 'BOZO' })
       onBetSubmitted()
       onClose()
     } catch (err) {
@@ -342,40 +345,49 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-          {/* Team Selection */}
+          {/* Bet Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Team/Group (Optional)
+              Bet Type *
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <select
-                name="teamId"
-                value={formData.teamId}
-                onChange={(e) => {
-                  console.log('Team selection changed:', e.target.value)
-                  setFormData(prev => ({
-                    ...prev,
-                    [e.target.name]: e.target.value,
-                    userId: '' // Reset member selection when team changes
-                  }))
-                }}
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, betType: 'BOZO' }))}
+                className={`p-3 rounded-lg border-2 transition-colors ${
+                  formData.betType === 'BOZO'
+                    ? 'border-red-500 bg-red-900/20 text-red-200'
+                    : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
+                }`}
               >
-                <option value="">All members</option>
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name} ({team.users.length} members)
-                  </option>
-                ))}
-              </select>
+                <div className="text-center">
+                  <div className="text-2xl mb-1">🤡</div>
+                  <div className="font-semibold">Bozo Bet</div>
+                  <div className="text-xs opacity-75">Risky pick</div>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, betType: 'FAVORITE' }))}
+                className={`p-3 rounded-lg border-2 transition-colors ${
+                  formData.betType === 'FAVORITE'
+                    ? 'border-green-500 bg-green-900/20 text-green-200'
+                    : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-2xl mb-1">⭐</div>
+                  <div className="font-semibold">Favorite Pick</div>
+                  <div className="text-xs opacity-75">Safe bet</div>
+                </div>
+              </button>
             </div>
           </div>
 
-          {/* Member Selection */}
+          {/* Member Selection (Team-Exclusive) */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Member *
+              Team Member *
             </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
@@ -392,7 +404,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 required
                 className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
-                <option value="">Select a member</option>
+                <option value="">Select a team member</option>
                 {getFilteredUsers().map(user => (
                   <option key={user.id} value={user.id}>
                     {user.name}
@@ -400,6 +412,11 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 ))}
               </select>
             </div>
+            {!currentUser?.teamId && (
+              <p className="mt-2 text-sm text-yellow-400">
+                ⚠️ You must be assigned to a team to submit bets
+              </p>
+            )}
           </div>
 
           <div>

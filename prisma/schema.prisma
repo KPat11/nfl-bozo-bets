@@ -46,12 +46,13 @@ model WeeklyBet {
   odds      Float?
   fanduelId String?
   status    PropStatus @default(PENDING)
+  betType   BetType    @default(BOZO)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   payments  Payment[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, week, season])
+  @@unique([userId, week, season, betType])
   @@map("weekly_bets")
 }
 
@@ -139,4 +140,9 @@ enum NotificationType {
   PROP_RESULT
   WEEKLY_REMINDER
   SYSTEM
+}
+
+enum BetType {
+  BOZO
+  FAVORITE
 }

@@ -9,7 +9,8 @@ const createWeeklyBetSchema = z.object({
   season: z.number().int().min(2020),
   prop: z.string().min(1),
   odds: z.number().optional(),
-  fanduelId: z.string().optional()
+  fanduelId: z.string().optional(),
+  betType: z.enum(['BOZO', 'FAVORITE']).default('BOZO')
 })
 
 export async function GET(request: NextRequest) {
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, week, season, prop, odds, fanduelId } = createWeeklyBetSchema.parse(body)
+    const { userId, week, season, prop, odds, fanduelId, betType } = createWeeklyBetSchema.parse(body)
 
     // Validate NFL week timing
     const weekValidation = canSubmitBetForWeek(week, season)
@@ -55,35 +56,25 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Check if user already has a bet for this week/season
-    const existingBet = await prisma.weeklyBet.findUnique({
-      where: {
-        userId_week_season: {
-          userId,
-          week,
-          season
-        }
-      }
-    })
+    // Check if user already has a bet for this week/season/betType
+    const existingBet = await prisma.$queryRaw`
+      SELECT * FROM weekly_bets 
+      WHERE "userId" = ${userId} 
+      AND week = ${week} 
+      AND season = ${season} 
+      AND "betType" = ${betType}
+      LIMIT 1
+    `
 
-    if (existingBet) {
-      return NextResponse.json({ error: 'User already has a bet for this week' }, { status: 409 })
+    if (Array.isArray(existingBet) && existingBet.length > 0) {
+      return NextResponse.json({ error: `User already has a ${betType.toLowerCase()} bet for this week` }, { status: 409 })
     }
 
-    const weeklyBet = await prisma.weeklyBet.create({
-      data: {
-        userId,
-        week,
-        season,
-        prop,
-        odds,
-        fanduelId
-      },
-      include: {
-        user: true,
-        payments: true
-      }
-    })
+    const weeklyBet = await prisma.$queryRaw`
+      INSERT INTO weekly_bets (id, "userId", week, season, prop, odds, "fanduelId", status, "betType", "createdAt", "updatedAt")
+      VALUES (gen_random_uuid(), ${userId}, ${week}, ${season}, ${prop}, ${odds || null}, ${fanduelId || null}, 'PENDING', ${betType}, NOW(), NOW())
+      RETURNING *
+    `
 
     return NextResponse.json(weeklyBet, { status: 201 })
   } catch (error) {
