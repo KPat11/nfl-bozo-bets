@@ -1,5 +1,5 @@
 {
-  "buildCommand": "rm -rf node_modules/.prisma && npx prisma generate && next build",
-  "installCommand": "npm install && npx prisma generate",
+  "buildCommand": "node scripts/force-prisma-regenerate.js && next build",
+  "installCommand": "npm install && node scripts/force-prisma-regenerate.js",
   "framework": "nextjs"
 }

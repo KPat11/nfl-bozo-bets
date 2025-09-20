@@ -4,12 +4,12 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-// Create a mock Prisma client for when database is not available
+// Create a comprehensive mock Prisma client
 const createMockPrismaClient = (): PrismaClient => {
   const mockClient = {
     user: {
       findMany: async () => [],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      findUnique: async () => null,
       create: async (data: any) => {
         console.log('Mock: Creating user with data:', data)
         return {
@@ -21,33 +21,107 @@ const createMockPrismaClient = (): PrismaClient => {
           totalHits: 0
         }
       },
-      findUnique: async () => null,
       update: async () => ({}),
-      delete: async () => ({})
+      updateMany: async () => ({ count: 0 }),
+      delete: async () => ({}),
+      count: async () => 0
+    },
+    team: {
+      findMany: async () => [],
+      findUnique: async () => null,
+      create: async (data: any) => {
+        console.log('Mock: Creating team with data:', data)
+        return {
+          id: 'mock-team-id',
+          ...data.data,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      },
+      update: async () => ({}),
+      updateMany: async () => ({ count: 0 }),
+      delete: async () => ({}),
+      count: async () => 0
     },
     weeklyBet: {
       findMany: async () => [],
+      findUnique: async () => null,
       create: async () => ({}),
       update: async () => ({}),
-      updateMany: async () => ({ count: 0 })
+      updateMany: async () => ({ count: 0 }),
+      delete: async () => ({}),
+      count: async () => 0
     },
     payment: {
       findMany: async () => [],
+      findUnique: async () => null,
       create: async () => ({}),
-      update: async () => ({})
+      update: async () => ({}),
+      updateMany: async () => ({ count: 0 }),
+      delete: async () => ({}),
+      count: async () => 0
+    },
+    notification: {
+      findMany: async () => [],
+      findUnique: async () => null,
+      create: async () => ({}),
+      update: async () => ({}),
+      updateMany: async () => ({ count: 0 }),
+      delete: async () => ({}),
+      count: async () => 0
     },
     fanduelProp: {
       findMany: async () => [],
-      upsert: async () => ({}),
+      findUnique: async () => null,
+      create: async () => ({}),
       update: async () => ({}),
-      updateMany: async () => ({ count: 0 })
-    }
+      updateMany: async () => ({ count: 0 }),
+      upsert: async () => ({}),
+      delete: async () => ({}),
+      count: async () => 0
+    },
+    bozoStat: {
+      findMany: async () => [],
+      findUnique: async () => null,
+      create: async () => ({}),
+      update: async () => ({}),
+      updateMany: async () => ({ count: 0 }),
+      delete: async () => ({}),
+      count: async () => 0
+    },
+    $connect: async () => {},
+    $disconnect: async () => {},
+    $queryRaw: async () => [],
+    $executeRaw: async () => 0
   } as unknown as PrismaClient
 
   return mockClient
 }
 
-// Create Prisma client with proper PostgreSQL handling
+// Test if Prisma client has all required models
+const testPrismaClient = async (client: PrismaClient): Promise<boolean> => {
+  try {
+    // Test if all required models exist and are callable
+    const requiredModels = ['user', 'team', 'weeklyBet', 'payment', 'notification', 'fanduelProp', 'bozoStat']
+    
+    for (const model of requiredModels) {
+      if (!(model in client) || typeof (client as any)[model]?.findMany !== 'function') {
+        console.log(`❌ Model ${model} not available in Prisma client`)
+        return false
+      }
+    }
+    
+    // Test a simple query to ensure database connection works
+    await (client as any).user.findMany({ take: 1 })
+    console.log('✅ All Prisma models are available and working')
+    return true
+  } catch (error) {
+    console.log('❌ Prisma client test failed:', error instanceof Error ? error.message : 'Unknown error')
+    return false
+  }
+}
+
+// Create Prisma client with enhanced error handling
 let prismaClient: PrismaClient
 let isDatabaseAvailable = false
 
@@ -56,29 +130,31 @@ try {
     log: ['query', 'info', 'warn', 'error'],
   })
   
-  // Test the connection asynchronously
-  prismaClient.$connect()
-    .then(() => {
-      console.log('✅ Database connected successfully')
-      isDatabaseAvailable = true
+  // Test the client asynchronously
+  testPrismaClient(prismaClient)
+    .then((isWorking) => {
+      isDatabaseAvailable = isWorking
+      if (isWorking) {
+        console.log('✅ Database and Prisma client are working correctly')
+      } else {
+        console.log('⚠️ Database available but Prisma client is outdated - using mock client')
+      }
     })
     .catch((error) => {
       console.error('❌ Database connection failed:', error.message)
-      console.log('Using mock client for development')
       isDatabaseAvailable = false
     })
 } catch (error) {
   console.error('Failed to create Prisma client:', error)
-  console.log('Using mock client for development')
   prismaClient = createMockPrismaClient()
   isDatabaseAvailable = false
 }
 
-// Export a wrapper that checks database availability
+// Export a wrapper that provides the appropriate client
 export const prisma = new Proxy(prismaClient, {
   get(target, prop) {
     if (!isDatabaseAvailable && typeof prop === 'string') {
-      console.log(`Database not available, using mock for ${prop}`)
+      console.log(`Database not ready, using mock for ${prop}`)
       const mockClient = createMockPrismaClient()
       return mockClient[prop as keyof PrismaClient]
     }
