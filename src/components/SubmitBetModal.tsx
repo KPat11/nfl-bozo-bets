@@ -186,6 +186,11 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   } | null>(null)
 
+  // Debug form data changes
+  useEffect(() => {
+    console.log('Form data changed:', formData)
+  }, [formData])
+
   // Get filtered users based on current user's team (team-exclusive betting)
   const getFilteredUsers = () => {
     console.log('Current user:', currentUser)
@@ -255,24 +260,30 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, fetchUsers, fetchTeams, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval, week, season])
+  }, [isOpen, week, season]) // Removed problematic dependencies
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
 
-    console.log('Submitting bet with form data:', formData)
+    console.log('=== FORM SUBMISSION DEBUG ===')
+    console.log('Form data:', formData)
     console.log('Week:', week, 'Season:', season)
+    console.log('Current user:', currentUser)
+    console.log('Available users:', users)
+    console.log('Filtered users:', getFilteredUsers())
 
     // Basic validation
     if (!formData.userId) {
+      console.log('Validation failed: No user selected')
       setError('Please select a team member')
       setLoading(false)
       return
     }
     
     if (!formData.prop.trim()) {
+      console.log('Validation failed: No prop entered')
       setError('Please enter a prop bet')
       setLoading(false)
       return
@@ -391,8 +402,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               <button
                 type="button"
                 onClick={() => {
-                  console.log('Setting bet type to BOZO')
-                  setFormData(prev => ({ ...prev, betType: 'BOZO' }))
+                  console.log('Setting bet type to BOZO, current state:', formData.betType)
+                  setFormData(prev => {
+                    const newData = { ...prev, betType: 'BOZO' as const }
+                    console.log('New form data:', newData)
+                    return newData
+                  })
                 }}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   formData.betType === 'BOZO'
@@ -408,8 +423,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               <button
                 type="button"
                 onClick={() => {
-                  console.log('Setting bet type to FAVORITE')
-                  setFormData(prev => ({ ...prev, betType: 'FAVORITE' }))
+                  console.log('Setting bet type to FAVORITE, current state:', formData.betType)
+                  setFormData(prev => {
+                    const newData = { ...prev, betType: 'FAVORITE' as const }
+                    console.log('New form data:', newData)
+                    return newData
+                  })
                 }}
                 className={`p-3 rounded-lg border-2 transition-colors ${
                   formData.betType === 'FAVORITE'
