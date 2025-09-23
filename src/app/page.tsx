@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target, Edit3, Trash2, CheckCircle, XCircle, Crown, Shield } from 'lucide-react'
+import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target, Edit3, Trash2, CheckCircle, XCircle, Crown, Shield, LogIn, LogOut } from 'lucide-react'
 import AddMemberModal from '@/components/AddMemberModal'
 import SubmitBetModal from '@/components/SubmitBetModal'
 import TeamsSection from '@/components/TeamsSection'
@@ -12,6 +12,8 @@ import LeaderboardTab from '@/components/LeaderboardTab'
 import MemberManagement from '@/components/MemberManagement'
 import ManagementModal from '@/components/ManagementModal'
 import StatsManagementModal from '@/components/StatsManagementModal'
+import TeamManagementModal from '@/components/TeamManagementModal'
+import AuthModal from '@/components/AuthModal'
 
 interface User {
   id: string
@@ -76,6 +78,20 @@ export default function Home() {
     teamName?: string | null
     teamColor?: string | null
   } | null>(null)
+  
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authUser, setAuthUser] = useState<{
+    id: string
+    email: string
+    name: string
+    isAdmin: boolean
+    isBiggestBozo: boolean
+    teamId?: string
+  } | null>(null)
+  const [authToken, setAuthToken] = useState<string | null>(null)
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [showTeamManagementModal, setShowTeamManagementModal] = useState(false)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -169,7 +185,71 @@ export default function Home() {
     }
   }
 
+  // Authentication functions
+  const handleLogin = (user: {
+    id: string
+    email: string
+    name: string
+    isAdmin: boolean
+    isBiggestBozo: boolean
+    teamId?: string
+  }, token: string) => {
+    setAuthUser(user)
+    setAuthToken(token)
+    setIsAuthenticated(true)
+    localStorage.setItem('authToken', token)
+    localStorage.setItem('authUser', JSON.stringify(user))
+  }
+
+  const handleLogout = async () => {
+    try {
+      if (authToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        })
+      }
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setAuthUser(null)
+      setAuthToken(null)
+      setIsAuthenticated(false)
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('authUser')
+    }
+  }
+
+  const checkAuthStatus = async () => {
+    const token = localStorage.getItem('authToken')
+    const user = localStorage.getItem('authUser')
+    
+    if (token && user) {
+      try {
+        const response = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setAuthUser(data.user)
+          setAuthToken(token)
+          setIsAuthenticated(true)
+        } else {
+          // Token is invalid, clear storage
+          localStorage.removeItem('authToken')
+          localStorage.removeItem('authUser')
+        }
+      } catch (error) {
+        console.error('Auth check error:', error)
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('authUser')
+      }
+    }
+  }
+
   useEffect(() => {
+    checkAuthStatus()
     fetchUsers()
     checkForBiggestBozo()
   }, [fetchUsers, checkForBiggestBozo]) // Include dependencies to fix ESLint warnings
@@ -333,18 +413,43 @@ export default function Home() {
                 <Target className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Submit Bet</span>
               </button>
-              {(currentUser?.isBiggestBozo || currentUser?.isAdmin) && (
+              {/* Authentication Buttons */}
+              {!isAuthenticated ? (
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                >
+                  <LogIn className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>Login</span>
+                </button>
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <span className="text-gray-300 text-sm">
+                    Welcome, {authUser?.name}
+                  </span>
+                  <button 
+                    onClick={handleLogout}
+                    className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                  >
+                    <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span>Logout</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Management Buttons - Only show if authenticated and has privileges */}
+              {isAuthenticated && (authUser?.isBiggestBozo || authUser?.isAdmin) && (
                 <>
                   <button 
                     onClick={() => setShowManagementModal(true)}
                     className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
                   >
-                    {currentUser?.isAdmin ? (
+                    {authUser?.isAdmin ? (
                       <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
                     ) : (
                       <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
                     )}
-                    <span>{currentUser?.isAdmin ? 'Admin' : 'BIGGEST BOZO'}</span>
+                    <span>{authUser?.isAdmin ? 'Admin' : 'BIGGEST BOZO'}</span>
                   </button>
                   <button 
                     onClick={() => setShowStatsManagementModal(true)}
@@ -352,6 +457,13 @@ export default function Home() {
                   >
                     <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Stats</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowTeamManagementModal(true)}
+                    className="flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                  >
+                    <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span>Team Mgmt</span>
                   </button>
                 </>
               )}
@@ -1122,6 +1234,34 @@ export default function Home() {
           fetchUsers()
           checkForBiggestBozo()
         }}
+      />
+
+      <TeamManagementModal
+        isOpen={showTeamManagementModal}
+        onClose={() => setShowTeamManagementModal(false)}
+        currentUser={authUser || {
+          id: '',
+          name: '',
+          email: '',
+          isBiggestBozo: false,
+          isAdmin: false,
+          teamId: '',
+          totalBozos: 0,
+          totalHits: 0,
+          totalFavMisses: 0
+        }}
+        week={currentWeek}
+        season={currentSeason}
+        onStatsUpdated={() => {
+          fetchUsers()
+          checkForBiggestBozo()
+        }}
+      />
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLogin={handleLogin}
       />
     </div>
   )

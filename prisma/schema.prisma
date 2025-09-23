@@ -13,8 +13,10 @@ model User {
   name            String
   phone           String?
   teamId          String?
+  password        String      @default("") // Hashed password for authentication
   totalBozos      Int         @default(0)
   totalHits       Int         @default(0)
+  totalFavMisses  Int         @default(0) // New: misses for favorite picks
   isBiggestBozo   Boolean     @default(false)
   isAdmin         Boolean     @default(false)
   managementWeek  Int?        // Week when user has BIGGEST BOZO privileges
@@ -27,6 +29,7 @@ model User {
   weeklyBets      WeeklyBet[]
   managedBets     BetManagement[] @relation("ManagedBets")
   ledTeams        Team[]      @relation("TeamBiggestBozo")
+  sessions        Session[]   // Authentication sessions
 
   @@map("users")
 }
@@ -55,6 +58,7 @@ model WeeklyBet {
   fanduelId String?
   status    PropStatus @default(PENDING)
   betType   BetType    @default(BOZO)
+  paid      Boolean    @default(false) // Payment status
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   payments  Payment[]
@@ -178,4 +182,15 @@ enum ManagementAction {
   MARK_PUSH
   MARK_CANCELLED
   OVERRIDE_STATUS
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }

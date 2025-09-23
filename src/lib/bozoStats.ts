@@ -25,6 +25,91 @@ export interface WeeklyBozoStats {
   totalHits: number
 }
 
+export async function calculateBiggestBozo(week: number, season: number): Promise<void> {
+  try {
+    // Get all bozo bets from the previous week
+    const previousWeek = week - 1
+    if (previousWeek < 1) return
+
+    const bozoBets = await prisma.weeklyBet.findMany({
+      where: {
+        week: previousWeek,
+        season: season,
+        betType: 'BOZO',
+        status: 'BOZO'
+      },
+      include: {
+        user: true
+      }
+    })
+
+    if (bozoBets.length === 0) return
+
+    // Find the bet with the longest odds that missed (highest positive number)
+    // This represents the worst odds that didn't hit
+    let biggestBozoBet = bozoBets[0]
+    let longestOdds = biggestBozoBet.odds || 0
+
+    for (const bet of bozoBets) {
+      const currentOdds = bet.odds || 0
+      // For biggest bozo, we want the longest odds (highest positive number) that missed
+      // This represents the most confident bet that failed
+      if (currentOdds > longestOdds) {
+        longestOdds = currentOdds
+        biggestBozoBet = bet
+      }
+    }
+
+    // Update the biggest bozo status
+    await prisma.user.update({
+      where: { id: biggestBozoBet.userId },
+      data: {
+        isBiggestBozo: true,
+        managementWeek: week,
+        managementSeason: season
+      }
+    })
+
+    // Remove biggest bozo status from all other users
+    await prisma.user.updateMany({
+      where: {
+        id: { not: biggestBozoBet.userId },
+        isBiggestBozo: true
+      },
+      data: {
+        isBiggestBozo: false,
+        managementWeek: null,
+        managementSeason: null
+      }
+    })
+
+    // Create or update biggest bozo stat
+    await prisma.bozoStat.upsert({
+      where: {
+        userId_week_season: {
+          userId: biggestBozoBet.userId,
+          week: week,
+          season: season
+        }
+      },
+      update: {
+        isBiggestBozo: true
+      },
+      create: {
+        userId: biggestBozoBet.userId,
+        week: week,
+        season: season,
+        isBiggestBozo: true,
+        prop: biggestBozoBet.prop,
+        odds: biggestBozoBet.odds
+      }
+    })
+
+  } catch (error) {
+    console.error('Error calculating biggest bozo:', error)
+  }
+}
+
 export async function updateBozoStats(week: number, season: number): Promise<void> {
   console.log(`Updating bozo stats for Week ${week}, Season ${season}`)
 
