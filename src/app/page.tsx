@@ -75,7 +75,7 @@ export default function Home() {
     teamColor?: string | null
   } | null>(null)
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/users')
       const data = await response.json()
@@ -96,7 +96,7 @@ export default function Home() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const checkForBiggestBozo = useCallback(async () => {
     try {

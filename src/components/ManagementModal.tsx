@@ -59,12 +59,6 @@ export default function ManagementModal({
      currentUser.managementWeek === week && 
      currentUser.managementSeason === season)
 
-  useEffect(() => {
-    if (isOpen && hasManagementPrivileges) {
-      fetchTeamMembers()
-    }
-  }, [isOpen, hasManagementPrivileges, week, season, fetchTeamMembers])
-
   const fetchTeamMembers = useCallback(async () => {
     try {
       setLoading(true)
@@ -81,6 +75,12 @@ export default function ManagementModal({
       setLoading(false)
     }
   }, [currentUser.id, week, season])
+
+  useEffect(() => {
+    if (isOpen && hasManagementPrivileges) {
+      fetchTeamMembers()
+    }
+  }, [isOpen, hasManagementPrivileges, week, season, fetchTeamMembers])
 
   const markBetStatus = async (betId: string, status: 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED', reason?: string) => {
     try {
