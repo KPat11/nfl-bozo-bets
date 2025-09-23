@@ -326,10 +326,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }))
+    console.log('handleChange called:', e.target.name, e.target.value)
+    setFormData(prev => {
+      const newData = { ...prev, [e.target.name]: e.target.value }
+      console.log('New form data from handleChange:', newData)
+      return newData
+    })
   }
 
   const handlePropSelect = (prop: FanDuelProp) => {
@@ -401,11 +403,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <div className="grid grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  console.log('Setting bet type to BOZO, current state:', formData.betType)
+                onClick={(e) => {
+                  e.preventDefault()
+                  console.log('BOZO button clicked, current betType:', formData.betType)
                   setFormData(prev => {
-                    const newData = { ...prev, betType: 'BOZO' as const }
-                    console.log('New form data:', newData)
+                    const newData = { ...prev, betType: 'BOZO' }
+                    console.log('Setting betType to BOZO, new data:', newData)
                     return newData
                   })
                 }}
@@ -422,11 +425,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  console.log('Setting bet type to FAVORITE, current state:', formData.betType)
+                onClick={(e) => {
+                  e.preventDefault()
+                  console.log('FAVORITE button clicked, current betType:', formData.betType)
                   setFormData(prev => {
-                    const newData = { ...prev, betType: 'FAVORITE' as const }
-                    console.log('New form data:', newData)
+                    const newData = { ...prev, betType: 'FAVORITE' }
+                    console.log('Setting betType to FAVORITE, new data:', newData)
                     return newData
                   })
                 }}
@@ -455,11 +459,13 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 name="userId"
                 value={formData.userId}
                 onChange={(e) => {
+                  e.preventDefault()
                   console.log('Member selection changed:', e.target.value)
-                  setFormData(prev => ({
-                    ...prev,
-                    [e.target.name]: e.target.value
-                  }))
+                  setFormData(prev => {
+                    const newData = { ...prev, [e.target.name]: e.target.value }
+                    console.log('New form data after member selection:', newData)
+                    return newData
+                  })
                 }}
                 required
                 className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
@@ -614,11 +620,16 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <div className="flex items-center space-x-3">
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault()
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = Math.max(currentOdds - 0.5, -50)
                   console.log('Decreasing odds from', currentOdds, 'to', newOdds)
-                  setFormData(prev => ({ ...prev, odds: newOdds.toString() }))
+                  setFormData(prev => {
+                    const newData = { ...prev, odds: newOdds.toString() }
+                    console.log('New form data after decreasing odds:', newData)
+                    return newData
+                  })
                 }}
                 className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
               >
@@ -642,11 +653,16 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               
               <button
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault()
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = Math.min(currentOdds + 0.5, 50)
                   console.log('Increasing odds from', currentOdds, 'to', newOdds)
-                  setFormData(prev => ({ ...prev, odds: newOdds.toString() }))
+                  setFormData(prev => {
+                    const newData = { ...prev, odds: newOdds.toString() }
+                    console.log('New form data after increasing odds:', newData)
+                    return newData
+                  })
                 }}
                 className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
               >
