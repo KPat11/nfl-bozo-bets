@@ -123,7 +123,7 @@ export default function ManagementModal({
         body: JSON.stringify({
           action: 'admin_access',
           passcode: adminPasscode,
-          action: 'verify'
+          subAction: 'verify'
         })
       })
 
@@ -152,7 +152,7 @@ export default function ManagementModal({
         body: JSON.stringify({
           action: 'admin_access',
           passcode: adminPasscode,
-          action: 'update_stats',
+          subAction: 'update_stats',
           userId: selectedUser.id,
           totalBozos: manualStats.totalBozos,
           totalHits: manualStats.totalHits

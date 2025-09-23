@@ -183,7 +183,7 @@ export default function Home() {
     }, 30000) // Refresh every 30 seconds
 
     return () => clearInterval(refreshInterval)
-  }, [])
+  }, [fetchUsers])
 
   const goToPreviousWeek = () => {
     if (currentWeek > 1) {
