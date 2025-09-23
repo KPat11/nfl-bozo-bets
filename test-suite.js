@@ -7,7 +7,7 @@
  * It includes smoke tests, API tests, and database validation tests.
  */
 
-const fetch = require('node-fetch');
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // Configuration
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';

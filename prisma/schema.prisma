@@ -8,19 +8,25 @@ datasource db {
 }
 
 model User {
-  id         String      @id @default(cuid())
-  email      String      @unique
-  name       String
-  phone      String?
-  teamId     String?
-  totalBozos Int         @default(0)
-  totalHits  Int         @default(0)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-  bozoStats  BozoStat[]
-  payments   Payment[]
-  team       Team?       @relation(fields: [teamId], references: [id])
-  weeklyBets WeeklyBet[]
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String
+  phone           String?
+  teamId          String?
+  totalBozos      Int         @default(0)
+  totalHits       Int         @default(0)
+  isBiggestBozo   Boolean     @default(false)
+  isAdmin         Boolean     @default(false)
+  managementWeek  Int?        // Week when user has BIGGEST BOZO privileges
+  managementSeason Int?       // Season when user has BIGGEST BOZO privileges
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  bozoStats       BozoStat[]
+  payments        Payment[]
+  team            Team?       @relation(fields: [teamId], references: [id])
+  weeklyBets      WeeklyBet[]
+  managedBets     BetManagement[] @relation("ManagedBets")
+  ledTeams        Team[]      @relation("TeamBiggestBozo")
 
   @@map("users")
 }
@@ -30,9 +36,11 @@ model Team {
   name        String   @unique
   description String?
   color       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  users       User[]
+  biggestBozoId String?  // Current BIGGEST BOZO
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  users         User[]
+  biggestBozo   User?    @relation("TeamBiggestBozo", fields: [biggestBozoId], references: [id])
 
   @@map("teams")
 }
@@ -51,6 +59,7 @@ model WeeklyBet {
   updatedAt DateTime   @updatedAt
   payments  Payment[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  management BetManagement[]
 
   @@unique([userId, week, season, betType])
   @@map("weekly_bets")
@@ -120,6 +129,22 @@ model BozoStat {
   @@map("bozo_stats")
 }
 
+model BetManagement {
+  id            String   @id @default(cuid())
+  weeklyBetId   String
+  managerId     String
+  week          Int
+  season        Int
+  action        ManagementAction
+  reason        String?
+  createdAt     DateTime @default(now())
+  weeklyBet     WeeklyBet @relation(fields: [weeklyBetId], references: [id], onDelete: Cascade)
+  manager       User     @relation("ManagedBets", fields: [managerId], references: [id], onDelete: Cascade)
+
+  @@unique([weeklyBetId, managerId, week, season])
+  @@map("bet_management")
+}
+
 enum PropStatus {
   PENDING
   HIT
@@ -145,4 +170,12 @@ enum NotificationType {
 enum BetType {
   BOZO
   FAVORITE
+}
+
+enum ManagementAction {
+  MARK_HIT
+  MARK_BOZO
+  MARK_PUSH
+  MARK_CANCELLED
+  OVERRIDE_STATUS
 }

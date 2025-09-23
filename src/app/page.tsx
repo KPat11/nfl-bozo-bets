@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target, Edit3, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target, Edit3, Trash2, CheckCircle, XCircle, Crown, Shield } from 'lucide-react'
 import AddMemberModal from '@/components/AddMemberModal'
 import SubmitBetModal from '@/components/SubmitBetModal'
 import TeamsSection from '@/components/TeamsSection'
@@ -10,6 +10,7 @@ import EditBetModal from '@/components/EditBetModal'
 import BozoTrollModal from '@/components/BozoTrollModal'
 import LeaderboardTab from '@/components/LeaderboardTab'
 import MemberManagement from '@/components/MemberManagement'
+import ManagementModal from '@/components/ManagementModal'
 
 interface User {
   id: string
@@ -19,6 +20,10 @@ interface User {
   teamId?: string
   totalBozos?: number
   totalHits?: number
+  isBiggestBozo?: boolean
+  isAdmin?: boolean
+  managementWeek?: number
+  managementSeason?: number
   team?: {
     id: string
     name: string
@@ -57,6 +62,7 @@ export default function Home() {
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
   const [showEditBetModal, setShowEditBetModal] = useState(false)
   const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
+  const [showManagementModal, setShowManagementModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos' | 'leaderboard' | 'management'>('bets')
   const [recordView, setRecordView] = useState<'total' | 'bozo' | 'favorite'>('total')
   const [selectedBet, setSelectedBet] = useState<WeeklyBet | null>(null)
@@ -325,6 +331,19 @@ export default function Home() {
                 <Target className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Submit Bet</span>
               </button>
+              {(currentUser?.isBiggestBozo || currentUser?.isAdmin) && (
+                <button 
+                  onClick={() => setShowManagementModal(true)}
+                  className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                >
+                  {currentUser?.isAdmin ? (
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ) : (
+                    <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
+                  )}
+                  <span>{currentUser?.isAdmin ? 'Admin' : 'BIGGEST BOZO'}</span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1054,6 +1073,23 @@ export default function Home() {
         isOpen={showBozoTrollModal}
         onClose={() => setShowBozoTrollModal(false)}
         biggestBozo={biggestBozo}
+      />
+      
+      <ManagementModal
+        isOpen={showManagementModal}
+        onClose={() => setShowManagementModal(false)}
+        currentUser={currentUser || {
+          id: '',
+          name: '',
+          email: '',
+          isBiggestBozo: false,
+          isAdmin: false,
+          totalBozos: 0,
+          totalHits: 0,
+          weeklyBets: []
+        } as User}
+        week={currentWeek}
+        season={currentSeason}
       />
     </div>
   )
