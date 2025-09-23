@@ -9,6 +9,8 @@ interface User {
   email: string
   isBiggestBozo?: boolean
   isAdmin?: boolean
+  managementWeek?: number
+  managementSeason?: number
   teamId?: string
   totalBozos?: number
   totalHits?: number
@@ -201,12 +203,6 @@ export default function StatsManagementModal({
     return users.filter(user => user.teamId === currentUser.teamId)
   }
 
-  const getCurrentUserRecord = () => {
-    if (!currentUser) return { hits: 0, misses: 0 }
-    const hits = currentUser.totalHits || 0
-    const misses = currentUser.totalBozos || 0
-    return { hits, misses }
-  }
 
   if (!isOpen) return null
 
