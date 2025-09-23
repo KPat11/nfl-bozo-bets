@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Plus, Trash2, Edit, CheckCircle } from 'lucide-react'
+import { Users, Plus, Trash2, Edit, CheckCircle, UserPlus, Lock, Unlock } from 'lucide-react'
 import CreateTeamModal from './CreateTeamModal'
 import EditTeamModal from './EditTeamModal'
 
@@ -10,6 +10,7 @@ interface Team {
   name: string
   description?: string
   color?: string
+  isLocked?: boolean
   createdAt: string
   updatedAt: string
   users: Array<{
@@ -21,9 +22,15 @@ interface Team {
 
 interface TeamsSectionProps {
   onTeamCreated: () => void
+  currentUser?: {
+    id: string
+    name: string
+    email: string
+    teamId?: string
+  } | null
 }
 
-export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
+export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectionProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -120,6 +127,63 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
     }
   }
 
+  const handleJoinTeam = async (teamId: string) => {
+    if (!currentUser) {
+      setError('You must be logged in to join a team')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/teams/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          teamId,
+          userId: currentUser.id
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setSuccess(`Successfully joined ${data.team.name}!`)
+        fetchTeams()
+        onTeamCreated() // Refresh user data
+      } else {
+        setError(data.error || 'Failed to join team')
+      }
+    } catch (error) {
+      console.error('Error joining team:', error)
+      setError('Failed to join team')
+    }
+  }
+
+  const handleToggleLock = async (teamId: string, isLocked: boolean) => {
+    try {
+      const response = await fetch(`/api/teams/${teamId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          isLocked: !isLocked
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setTeams(teams.map(team => 
+          team.id === teamId ? { ...team, isLocked: !isLocked } : team
+        ))
+        setSuccess(`Team ${!isLocked ? 'locked' : 'unlocked'} successfully`)
+      } else {
+        setError(data.error || 'Failed to update team lock status')
+      }
+    } catch (error) {
+      console.error('Error toggling team lock:', error)
+      setError('Failed to update team lock status')
+    }
+  }
+
   if (loading) {
     return (
       <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 p-6">
@@ -185,6 +249,18 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
                     <h3 className="text-lg font-semibold text-white">{team.name}</h3>
                   </div>
                   <div className="flex space-x-1">
+                    {/* Lock/Unlock Toggle */}
+                    <button 
+                      onClick={() => handleToggleLock(team.id, team.isLocked || false)}
+                      className={`p-1 transition-colors ${
+                        team.isLocked 
+                          ? 'text-red-400 hover:text-red-300' 
+                          : 'text-gray-400 hover:text-green-400'
+                      }`}
+                      title={team.isLocked ? 'Unlock team' : 'Lock team'}
+                    >
+                      {team.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                    </button>
                     <button 
                       onClick={() => handleEditTeam(team)}
                       className="p-1 text-gray-400 hover:text-white transition-colors"
@@ -223,6 +299,34 @@ export default function TeamsSection({ onTeamCreated }: TeamsSectionProps) {
                         +{team.users.length - 3} more
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Join Team Button */}
+                {currentUser && currentUser.teamId !== team.id && (
+                  <div className="mt-4">
+                    {team.isLocked ? (
+                      <div className="flex items-center space-x-2 text-sm text-gray-400">
+                        <Lock className="h-4 w-4" />
+                        <span>Team locked - invitation required</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleJoinTeam(team.id)}
+                        className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
+                      >
+                        <UserPlus className="h-4 w-4" />
+                        <span>Join Team</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Current Team Indicator */}
+                {currentUser && currentUser.teamId === team.id && (
+                  <div className="mt-4 flex items-center space-x-2 text-sm text-green-400">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Your team</span>
                   </div>
                 )}
               </div>

@@ -31,6 +31,7 @@ model User {
   ledTeams        Team[]      @relation("TeamBiggestBozo")
   sessions        Session[]   // Authentication sessions
   passwordResets  PasswordReset[] // Password reset tokens
+  teamInvitations TeamInvitation[] @relation("TeamInvitations") // Team invitations sent
 
   @@map("users")
 }
@@ -41,10 +42,12 @@ model Team {
   description String?
   color       String?
   biggestBozoId String?  // Current BIGGEST BOZO
+  isLocked    Boolean  @default(false) // Team access control
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   users         User[]
   biggestBozo   User?    @relation("TeamBiggestBozo", fields: [biggestBozoId], references: [id])
+  invitations   TeamInvitation[] // Team invitations
 
   @@map("teams")
 }
@@ -206,4 +209,19 @@ model PasswordReset {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_resets")
+}
+
+model TeamInvitation {
+  id        String   @id @default(cuid())
+  teamId    String
+  inviterId String   // User who sent the invitation
+  inviteeEmail String // Email of person being invited
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  inviter   User     @relation("TeamInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@map("team_invitations")
 }

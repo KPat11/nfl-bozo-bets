@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Plus, Target, Edit3, Trash2, CheckCircle, XCircle, Crown, Shield, LogIn, LogOut } from 'lucide-react'
-import AddMemberModal from '@/components/AddMemberModal'
+import { Users, Trophy, DollarSign, Calendar, AlertCircle, ChevronLeft, ChevronRight, Target, Edit3, Trash2, CheckCircle, XCircle, Crown, Shield, LogIn, LogOut } from 'lucide-react'
 import SubmitBetModal from '@/components/SubmitBetModal'
 import TeamsSection from '@/components/TeamsSection'
 import BozoLeaderboard from '@/components/BozoLeaderboard'
@@ -14,6 +13,7 @@ import ManagementModal from '@/components/ManagementModal'
 import StatsManagementModal from '@/components/StatsManagementModal'
 import TeamManagementModal from '@/components/TeamManagementModal'
 import AuthModal from '@/components/AuthModal'
+import WelcomeModal from '@/components/WelcomeModal'
 
 interface User {
   id: string
@@ -61,7 +61,6 @@ export default function Home() {
   const [currentWeek, setCurrentWeek] = useState(3) // Week 3 of NFL season
   const [currentSeason] = useState(2025)
   const [loading, setLoading] = useState(true)
-  const [showAddMemberModal, setShowAddMemberModal] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
   const [showEditBetModal, setShowEditBetModal] = useState(false)
   const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
@@ -92,6 +91,7 @@ export default function Home() {
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false)
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -133,9 +133,6 @@ export default function Home() {
     }
   }, [currentWeek, currentSeason])
 
-  const handleMemberAdded = () => {
-    fetchUsers()
-  }
 
   const handleBetSubmitted = () => {
     fetchUsers()
@@ -143,6 +140,11 @@ export default function Home() {
 
   const handleTeamCreated = () => {
     fetchUsers()
+  }
+
+  const handleJoinTeam = () => {
+    setShowWelcomeModal(false)
+    setActiveTab('teams')
   }
 
   const handleMemberUpdated = () => {
@@ -199,6 +201,12 @@ export default function Home() {
     setIsAuthenticated(true)
     localStorage.setItem('authToken', token)
     localStorage.setItem('authUser', JSON.stringify(user))
+    setShowAuthModal(false)
+    
+    // Check if this is a first-time user (no team assigned)
+    if (!user.teamId) {
+      setShowWelcomeModal(true)
+    }
   }
 
   const handleLogout = async () => {
@@ -399,13 +407,6 @@ export default function Home() {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-              <button 
-                onClick={() => setShowAddMemberModal(true)}
-                className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
-              >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span>Add Member</span>
-              </button>
               <button 
                 onClick={() => setShowSubmitBetModal(true)}
                 className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
@@ -660,7 +661,7 @@ export default function Home() {
         )}
 
         {activeTab === 'teams' && (
-          <TeamsSection onTeamCreated={handleTeamCreated} />
+          <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} />
         )}
 
                 {activeTab === 'bozos' && (
@@ -1195,11 +1196,6 @@ export default function Home() {
       )}
 
       {/* Modals */}
-      <AddMemberModal
-        isOpen={showAddMemberModal}
-        onClose={() => setShowAddMemberModal(false)}
-        onMemberAdded={handleMemberAdded}
-      />
       
       <SubmitBetModal
         isOpen={showSubmitBetModal}
@@ -1288,6 +1284,13 @@ export default function Home() {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onLogin={handleLogin}
+      />
+
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        onJoinTeam={handleJoinTeam}
+        userName={authUser?.name || 'there'}
       />
     </div>
   )

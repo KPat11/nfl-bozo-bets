@@ -77,6 +77,57 @@ export function generateWelcomeEmail(name: string, email: string): EmailData {
   }
 }
 
+export function generateTeamInviteEmail(inviteeEmail: string, teamName: string, inviterName: string, inviteLink: string): EmailData {
+  return {
+    to: inviteeEmail,
+    subject: `You're invited to join ${teamName} on NFL Bozo Bets! 🏈`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 30px; border-radius: 10px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🏈 Team Invitation!</h1>
+        </div>
+        
+        <div style="padding: 30px; background: #f8fafc; border-radius: 10px; margin-top: 20px;">
+          <h2 style="color: #1e293b; margin-bottom: 20px;">You've been invited to join a team!</h2>
+          
+          <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+            <strong>${inviterName}</strong> has invited you to join <strong>${teamName}</strong> on NFL Bozo Bets!
+          </p>
+          
+          <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #3b82f6;">
+            <h3 style="color: #1e40af; margin-top: 0;">What's Next?</h3>
+            <p style="color: #475569; margin-bottom: 20px;">
+              Click the button below to accept the invitation and join the team. This link will expire in 7 days.
+            </p>
+            
+            <div style="text-align: center;">
+              <a href="${inviteLink}" 
+                 style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                🚀 Join ${teamName}
+              </a>
+            </div>
+          </div>
+          
+          <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="color: #92400e; margin: 0; font-size: 14px;">
+              <strong>💡 Don't have an account yet?</strong> No worries! Click the link above and you'll be able to create an account and join the team in one step.
+            </p>
+          </div>
+          
+          <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+            Once you join, you'll be able to compete with your teammates, track your betting progress, and have fun together!
+          </p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; color: #64748b; font-size: 12px;">
+          <p>NFL Bozo Bets - Where every bet is a story! 🏈</p>
+        </div>
+      </div>
+    `,
+    text: `Team Invitation!\n\n${inviterName} has invited you to join ${teamName} on NFL Bozo Bets!\n\nClick this link to join: ${inviteLink}\n\nThis link will expire in 7 days.\n\nDon't have an account yet? No worries! Click the link above and you'll be able to create an account and join the team in one step.\n\nNFL Bozo Bets - Where every bet is a story!`
+  }
+}
+
 export function generatePasswordResetEmail(name: string, email: string, resetLink: string): EmailData {
   return {
     to: email,
