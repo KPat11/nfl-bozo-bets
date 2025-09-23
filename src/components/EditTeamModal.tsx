@@ -217,8 +217,8 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
   if (!isOpen || !team) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 sm:p-6">
-      <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 w-full max-w-md p-4 sm:p-6">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center z-50 p-4 sm:p-6 overflow-y-auto">
+      <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 w-full max-w-md p-4 sm:p-6 my-8">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-white">Edit Team</h2>
           <button

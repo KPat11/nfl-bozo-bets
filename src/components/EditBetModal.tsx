@@ -181,8 +181,8 @@ export default function EditBetModal({ isOpen, onClose, onBetUpdated, bet, user 
   const isPaid = bet.payments.some(p => p.status === 'PAID')
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-700">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 my-8 border border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <div className="flex items-center space-x-3">
@@ -307,8 +307,8 @@ export default function EditBetModal({ isOpen, onClose, onBetUpdated, bet, user 
 
         {/* Delete Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-60">
-            <div className="bg-gray-800 rounded-xl p-6 max-w-md mx-4 border border-gray-700">
+          <div className="fixed inset-0 bg-black bg-opacity-90 flex items-start justify-center z-60 p-4 overflow-y-auto">
+            <div className="bg-gray-800 rounded-xl p-6 max-w-md mx-4 my-8 border border-gray-700">
               <h3 className="text-lg font-semibold text-white mb-4">Confirm Delete</h3>
               <p className="text-gray-400 mb-6">
                 Are you sure you want to delete this bet? This action cannot be undone.

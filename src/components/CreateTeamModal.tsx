@@ -71,8 +71,8 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto border border-gray-700 shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 w-full max-w-md mx-4 my-8 border border-gray-700 shadow-2xl">
         <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-xl font-bold text-white">Create New Team</h2>
           <button

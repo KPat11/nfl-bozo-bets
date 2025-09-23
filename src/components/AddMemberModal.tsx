@@ -118,8 +118,8 @@ export default function AddMemberModal({ isOpen, onClose, onMemberAdded }: AddMe
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4 border border-gray-700 shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md mx-4 my-8 border border-gray-700 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-white">Add New Member</h2>
           <button

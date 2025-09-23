@@ -86,8 +86,8 @@ export default function BozoTrollModal({ isOpen, onClose, biggestBozo }: BozoTro
   const message = trollMessages[currentMessage]
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
-      <div className="bg-gradient-to-br from-red-900 via-purple-900 to-black rounded-2xl p-8 max-w-md mx-4 border-4 border-red-500 shadow-2xl">
+    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gradient-to-br from-red-900 via-purple-900 to-black rounded-2xl p-8 max-w-md mx-4 my-8 border-4 border-red-500 shadow-2xl">
         {/* Close button */}
         <button
           onClick={onClose}

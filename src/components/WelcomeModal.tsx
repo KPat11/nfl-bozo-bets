@@ -63,8 +63,8 @@ export default function WelcomeModal({ isOpen, onClose, onJoinTeam, userName }: 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-gray-800 rounded-lg max-w-2xl w-full my-8 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-800 rounded-lg max-w-2xl w-full my-8">
         <div className="p-8">
           {/* Progress Indicator */}
           <div className="flex justify-center mb-8">
