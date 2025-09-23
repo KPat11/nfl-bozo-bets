@@ -11,6 +11,7 @@ import BozoTrollModal from '@/components/BozoTrollModal'
 import LeaderboardTab from '@/components/LeaderboardTab'
 import MemberManagement from '@/components/MemberManagement'
 import ManagementModal from '@/components/ManagementModal'
+import StatsManagementModal from '@/components/StatsManagementModal'
 
 interface User {
   id: string
@@ -63,6 +64,7 @@ export default function Home() {
   const [showEditBetModal, setShowEditBetModal] = useState(false)
   const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
   const [showManagementModal, setShowManagementModal] = useState(false)
+  const [showStatsManagementModal, setShowStatsManagementModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'bets' | 'teams' | 'bozos' | 'leaderboard' | 'management'>('bets')
   const [recordView, setRecordView] = useState<'total' | 'bozo' | 'favorite'>('total')
   const [selectedBet, setSelectedBet] = useState<WeeklyBet | null>(null)
@@ -332,17 +334,26 @@ export default function Home() {
                 <span>Submit Bet</span>
               </button>
               {(currentUser?.isBiggestBozo || currentUser?.isAdmin) && (
-                <button 
-                  onClick={() => setShowManagementModal(true)}
-                  className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
-                >
-                  {currentUser?.isAdmin ? (
-                    <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
-                  ) : (
-                    <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
-                  )}
-                  <span>{currentUser?.isAdmin ? 'Admin' : 'BIGGEST BOZO'}</span>
-                </button>
+                <>
+                  <button 
+                    onClick={() => setShowManagementModal(true)}
+                    className="flex items-center justify-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                  >
+                    {currentUser?.isAdmin ? (
+                      <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                    ) : (
+                      <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
+                    )}
+                    <span>{currentUser?.isAdmin ? 'Admin' : 'BIGGEST BOZO'}</span>
+                  </button>
+                  <button 
+                    onClick={() => setShowStatsManagementModal(true)}
+                    className="flex items-center justify-center space-x-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                  >
+                    <Trophy className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span>Stats</span>
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -1090,6 +1101,27 @@ export default function Home() {
         } as User}
         week={currentWeek}
         season={currentSeason}
+      />
+      
+      <StatsManagementModal
+        isOpen={showStatsManagementModal}
+        onClose={() => setShowStatsManagementModal(false)}
+        currentUser={currentUser || {
+          id: '',
+          name: '',
+          email: '',
+          isBiggestBozo: false,
+          isAdmin: false,
+          totalBozos: 0,
+          totalHits: 0,
+          weeklyBets: []
+        } as User}
+        week={currentWeek}
+        season={currentSeason}
+        onStatsUpdated={() => {
+          fetchUsers()
+          checkForBiggestBozo()
+        }}
       />
     </div>
   )
