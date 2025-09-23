@@ -45,7 +45,6 @@ interface SubmitBetModalProps {
 
 export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser }: SubmitBetModalProps) {
   const [users, setUsers] = useState<User[]>([])
-  const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
   const [formData, setFormData] = useState({
     userId: '',
@@ -89,17 +88,6 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
   }, [])
 
-  const fetchTeams = useCallback(async () => {
-    try {
-      const response = await fetch('/api/teams')
-      const data = await response.json()
-      console.log('Fetched teams:', data) // Debug log
-      setTeams(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error('Error fetching teams:', error)
-      setTeams([]) // Set empty array on error
-    }
-  }, [])
 
   const fetchFanDuelProps = useCallback(async () => {
     try {
@@ -240,7 +228,6 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       setWeekValidation(validation)
       
       fetchUsers()
-      fetchTeams()
       fetchFanDuelProps()
       
       // Start live odds updates every 30 seconds
@@ -407,7 +394,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   e.preventDefault()
                   console.log('BOZO button clicked, current betType:', formData.betType)
                   setFormData(prev => {
-                    const newData = { ...prev, betType: 'BOZO' }
+                    const newData = { ...prev, betType: 'BOZO' as const }
                     console.log('Setting betType to BOZO, new data:', newData)
                     return newData
                   })
@@ -429,7 +416,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   e.preventDefault()
                   console.log('FAVORITE button clicked, current betType:', formData.betType)
                   setFormData(prev => {
-                    const newData = { ...prev, betType: 'FAVORITE' }
+                    const newData = { ...prev, betType: 'FAVORITE' as const }
                     console.log('Setting betType to FAVORITE, new data:', newData)
                     return newData
                   })
