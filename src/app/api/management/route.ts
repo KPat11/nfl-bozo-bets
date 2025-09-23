@@ -15,7 +15,7 @@ const markBetStatusSchema = z.object({
 // Schema for admin access
 const adminAccessSchema = z.object({
   passcode: z.string(),
-  action: z.enum(['verify', 'update_stats']),
+  subAction: z.enum(['verify', 'update_stats']),
   userId: z.string().optional(),
   totalBozos: z.number().optional(),
   totalHits: z.number().optional()
@@ -114,12 +114,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid admin passcode' }, { status: 401 })
       }
 
-      if (data.action === 'verify') {
+      if (data.subAction === 'verify') {
         return NextResponse.json({ 
           success: true, 
           message: 'Admin access granted' 
         })
-      } else if (data.action === 'update_stats') {
+      } else if (data.subAction === 'update_stats') {
         if (!data.userId || data.totalBozos === undefined || data.totalHits === undefined) {
           return NextResponse.json({ 
             error: 'Missing required fields for stats update' 
