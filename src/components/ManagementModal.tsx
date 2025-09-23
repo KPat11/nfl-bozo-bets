@@ -27,6 +27,7 @@ interface WeeklyBet {
 interface TeamMember {
   id: string
   name: string
+  email: string
   weeklyBets: WeeklyBet[]
 }
 
