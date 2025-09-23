@@ -170,11 +170,11 @@ export default function Home() {
   useEffect(() => {
     fetchUsers()
     checkForBiggestBozo()
-  }, []) // Remove checkForBiggestBozo from dependencies to prevent infinite re-renders
+  }, [fetchUsers, checkForBiggestBozo]) // Include dependencies to fix ESLint warnings
 
   useEffect(() => {
     checkForBiggestBozo()
-  }, [currentWeek]) // Remove checkForBiggestBozo from dependencies
+  }, [currentWeek, checkForBiggestBozo]) // Include dependencies to fix ESLint warnings
 
   // Periodic refresh to keep data up-to-date
   useEffect(() => {

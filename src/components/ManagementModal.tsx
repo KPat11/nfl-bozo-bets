@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Crown, Shield, CheckCircle, XCircle, AlertTriangle, User } from 'lucide-react'
 
 interface User {
@@ -63,9 +63,9 @@ export default function ManagementModal({
     if (isOpen && hasManagementPrivileges) {
       fetchTeamMembers()
     }
-  }, [isOpen, hasManagementPrivileges, week, season])
+  }, [isOpen, hasManagementPrivileges, week, season, fetchTeamMembers])
 
-  const fetchTeamMembers = async () => {
+  const fetchTeamMembers = useCallback(async () => {
     try {
       setLoading(true)
       const response = await fetch(`/api/management?userId=${currentUser.id}&week=${week}&season=${season}`)
@@ -80,7 +80,7 @@ export default function ManagementModal({
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentUser.id, week, season])
 
   const markBetStatus = async (betId: string, status: 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED', reason?: string) => {
     try {
@@ -227,7 +227,7 @@ export default function ManagementModal({
               No Management Privileges
             </h3>
             <p className="text-gray-400">
-              You don't have management privileges for Week {week} of the {season} season.
+              You don&apos;t have management privileges for Week {week} of the {season} season.
             </p>
           </div>
         ) : (
@@ -381,7 +381,7 @@ export default function ManagementModal({
                             onChange={(e) => {
                               const user = teamMembers.find(m => m.id === e.target.value)
                               if (user) {
-                                setSelectedUser(user as any)
+                                setSelectedUser(user as User)
                                 setManualStats({ totalBozos: 0, totalHits: 0 })
                               }
                             }}

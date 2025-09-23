@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
           managerId: data.managerId,
           week: data.week,
           season: data.season,
-          action: `MARK_${data.status}` as any,
+          action: `MARK_${data.status}` as 'MARK_HIT' | 'MARK_BOZO' | 'MARK_PUSH' | 'MARK_CANCELLED',
           reason: data.reason
         }
       })

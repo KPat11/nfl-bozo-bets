@@ -11,17 +11,6 @@ interface User {
   teamId?: string
 }
 
-interface Team {
-  id: string
-  name: string
-  description?: string
-  color?: string
-  users: Array<{
-    id: string
-    name: string
-    email: string
-  }>
-}
 
 interface FanDuelProp {
   id: string
@@ -247,7 +236,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, week, season]) // Removed problematic dependencies
+  }, [isOpen, week, season, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval]) // Include all dependencies
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
