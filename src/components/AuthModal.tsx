@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, Eye, EyeOff, User, Mail, Lock, Shield } from 'lucide-react'
 
 interface AuthModalProps {
@@ -21,6 +21,10 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('')
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false)
+  const [forgotPasswordMessage, setForgotPasswordMessage] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -28,7 +32,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
     confirmPassword: ''
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -83,7 +87,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
     } finally {
       setLoading(false)
     }
-  }
+  }, [mode, formData, onLogin, onClose])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -105,13 +109,66 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
   const switchMode = () => {
     setMode(mode === 'login' ? 'register' : 'login')
     resetForm()
+    setShowForgotPassword(false)
+    setForgotPasswordMessage('')
   }
+
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      setForgotPasswordMessage('Please enter your email address')
+      return
+    }
+
+    setForgotPasswordLoading(true)
+    setForgotPasswordMessage('')
+
+    try {
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: forgotPasswordEmail
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setForgotPasswordMessage('Password reset link has been sent to your email!')
+        setForgotPasswordEmail('')
+      } else {
+        setForgotPasswordMessage(data.error || 'Failed to send reset email')
+      }
+    } catch {
+      setForgotPasswordMessage('Network error. Please try again.')
+    } finally {
+      setForgotPasswordLoading(false)
+    }
+  }
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return
+      
+      if (e.key === 'Escape') {
+        onClose()
+      } else if (e.key === 'Enter' && !loading) {
+        e.preventDefault()
+        const formEvent = new Event('submit') as unknown as React.FormEvent<HTMLFormElement>
+        handleSubmit(formEvent)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, loading, handleSubmit, onClose])
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg max-w-md w-full">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-800 rounded-lg max-w-md w-full my-8 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <div className="flex items-center space-x-3">
             <Shield className="h-6 w-6 text-blue-500" />
@@ -238,7 +295,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
             {loading ? 'Processing...' : mode === 'login' ? 'Login' : 'Register'}
           </button>
 
-          <div className="text-center">
+          <div className="text-center space-y-2">
             <button
               type="button"
               onClick={switchMode}
@@ -249,7 +306,69 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
                 : "Already have an account? Login"
               }
             </button>
+            
+            {mode === 'login' && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(!showForgotPassword)}
+                  className="text-gray-400 hover:text-gray-300 transition-colors text-sm"
+                >
+                  Forgot your password?
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Forgot Password Section */}
+          {showForgotPassword && (
+            <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+              <h3 className="text-white font-medium mb-3">Reset Password</h3>
+              <div className="space-y-3">
+                <div>
+                  <input
+                    type="email"
+                    value={forgotPasswordEmail}
+                    onChange={(e) => setForgotPasswordEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                
+                {forgotPasswordMessage && (
+                  <div className={`p-2 rounded text-sm ${
+                    forgotPasswordMessage.includes('sent') 
+                      ? 'bg-green-900/20 text-green-300' 
+                      : 'bg-red-900/20 text-red-300'
+                  }`}>
+                    {forgotPasswordMessage}
+                  </div>
+                )}
+                
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    disabled={forgotPasswordLoading}
+                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  >
+                    {forgotPasswordLoading ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false)
+                      setForgotPasswordMessage('')
+                      setForgotPasswordEmail('')
+                    }}
+                    className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </div>

@@ -518,14 +518,24 @@ export default function Home() {
             🏆 <span className="hidden sm:inline">Leaderboard</span>
           </button>
           <button
-            onClick={() => setActiveTab('management')}
+            onClick={() => {
+              if (isAuthenticated && (authUser?.isAdmin || authUser?.isBiggestBozo)) {
+                setActiveTab('management')
+              }
+            }}
             className={`flex-1 sm:flex-none px-3 sm:px-6 py-2 sm:py-3 rounded-md font-medium transition-colors text-sm sm:text-base ${
               activeTab === 'management'
                 ? 'bg-orange-600 text-white'
-                : 'text-gray-400 hover:text-white'
+                : isAuthenticated && (authUser?.isAdmin || authUser?.isBiggestBozo)
+                ? 'text-gray-400 hover:text-white'
+                : 'text-gray-600 cursor-not-allowed opacity-50'
             }`}
+            disabled={!isAuthenticated || (!authUser?.isAdmin && !authUser?.isBiggestBozo)}
+            title={!isAuthenticated || (!authUser?.isAdmin && !authUser?.isBiggestBozo) ? 'Big Bozos Only' : ''}
           >
-            ⚙️ <span className="hidden sm:inline">Management</span>
+            ⚙️ <span className="hidden sm:inline">
+              {!isAuthenticated || (!authUser?.isAdmin && !authUser?.isBiggestBozo) ? 'Big Bozos Only' : 'Management'}
+            </span>
           </button>
         </div>
       </div>
@@ -662,7 +672,23 @@ export default function Home() {
                 )}
 
                 {activeTab === 'management' && (
-                  <MemberManagement onMemberUpdated={handleMemberUpdated} />
+                  isAuthenticated && (authUser?.isAdmin || authUser?.isBiggestBozo) ? (
+                    <MemberManagement onMemberUpdated={handleMemberUpdated} />
+                  ) : (
+                    <div className="bg-gray-800 rounded-lg p-8 text-center">
+                      <div className="text-6xl mb-4">👑</div>
+                      <h3 className="text-2xl font-bold text-gray-300 mb-4">Big Bozos Only</h3>
+                      <p className="text-gray-400 mb-6">
+                        This section is restricted to administrators and the current week&apos;s Biggest Bozo.
+                      </p>
+                      <div className="bg-gray-700 rounded-lg p-4 max-w-md mx-auto">
+                        <p className="text-sm text-gray-300">
+                          <strong>Admin Access:</strong> Ken Patel (kpatvtech@gmail.com)<br/>
+                          <strong>BIGGEST BOZO:</strong> Rotates weekly to the person with the worst missed bet
+                        </p>
+                      </div>
+                    </div>
+                  )
                 )}
       </div>
 

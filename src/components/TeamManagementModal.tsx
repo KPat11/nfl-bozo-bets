@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { X, Crown, Shield, CheckCircle, XCircle, AlertTriangle, DollarSign, Trophy } from 'lucide-react'
+import { X, Crown, Shield, CheckCircle, XCircle, AlertTriangle, Trophy } from 'lucide-react'
 
 interface User {
   id: string
@@ -57,6 +57,7 @@ export default function TeamManagementModal({
   const [teamBets, setTeamBets] = useState<WeeklyBet[]>([])
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [betTypeFilter, setBetTypeFilter] = useState<'BOZO' | 'FAVORITE'>('BOZO')
   // const [selectedMember, setSelectedMember] = useState<User | null>(null)
 
   const hasManagementPrivileges = currentUser.isAdmin || 
@@ -105,38 +106,20 @@ export default function TeamManagementModal({
     }
   }, [isOpen, hasManagementPrivileges, fetchTeamData])
 
-  const updateBetStatus = async (betId: string, status: 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED') => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/management', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'mark_bet_status',
-          betId,
-          status,
-          managerId: currentUser.id,
-          week,
-          season
-        })
-      })
-
-      const data = await response.json()
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return
       
-      if (data.success) {
-        setMessage(`Bet marked as ${status}`)
-        fetchTeamData()
-        if (onStatsUpdated) onStatsUpdated()
-      } else {
-        setMessage(`Error: ${data.error}`)
+      if (e.key === 'Escape') {
+        onClose()
       }
-    } catch (error) {
-      console.error('Error updating bet status:', error)
-      setMessage('Error updating bet status')
-    } finally {
-      setLoading(false)
     }
-  }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
 
   const updatePaymentStatus = async (betId: string, paid: boolean) => {
     try {
@@ -211,25 +194,51 @@ export default function TeamManagementModal({
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'HIT': return 'text-green-400'
-      case 'BOZO': return 'text-red-400'
-      case 'PUSH': return 'text-yellow-400'
-      case 'CANCELLED': return 'text-gray-400'
-      default: return 'text-gray-400'
-    }
-  }
 
   const getMemberBets = (memberId: string) => {
-    return teamBets.filter(bet => bet.userId === memberId)
+    return teamBets.filter(bet => bet.userId === memberId && bet.betType === betTypeFilter)
+  }
+
+  const updateBetStats = async (userId: string, statType: 'bozo' | 'hit' | 'favMiss', change: number) => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/management/update-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          bozoChange: statType === 'bozo' ? change : 0,
+          hitChange: statType === 'hit' ? change : 0,
+          favMissChange: statType === 'favMiss' ? change : 0,
+          reason: `Manual ${betTypeFilter.toLowerCase()} bet adjustment`,
+          managerId: currentUser.id,
+          week,
+          season
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setMessage(`Stats updated successfully`)
+        fetchTeamData()
+        if (onStatsUpdated) onStatsUpdated()
+      } else {
+        setMessage(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error updating bet stats:', error)
+      setMessage('Error updating bet stats')
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-gray-800 rounded-lg max-w-6xl w-full my-8 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <div className="flex items-center space-x-3">
             {currentUser.isAdmin ? (
@@ -272,6 +281,32 @@ export default function TeamManagementModal({
               <h3 className="text-lg font-semibold text-white mb-4">
                 Team Management - Week {week}
               </h3>
+              
+              {/* Bet Type Toggle */}
+              <div className="mb-6">
+                <div className="flex space-x-1 bg-gray-700 p-1 rounded-lg w-fit">
+                  <button
+                    onClick={() => setBetTypeFilter('BOZO')}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      betTypeFilter === 'BOZO'
+                        ? 'bg-red-600 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    🎯 Bozo Bets
+                  </button>
+                  <button
+                    onClick={() => setBetTypeFilter('FAVORITE')}
+                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                      betTypeFilter === 'FAVORITE'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    ⭐ Favorite Picks
+                  </button>
+                </div>
+              </div>
               
               {loading ? (
                 <div className="flex items-center justify-center py-8">
@@ -351,71 +386,82 @@ export default function TeamManagementModal({
                           </div>
                         </div>
 
-                        {/* Member's Bets */}
-                        {memberBets.length === 0 ? (
-                          <p className="text-gray-400 text-sm">No bets for this week</p>
-                        ) : (
-                          <div className="space-y-2">
-                            {memberBets.map((bet) => (
-                              <div key={bet.id} className="flex items-center justify-between bg-gray-600 rounded p-3">
-                                <div className="flex items-center space-x-3">
-                                  {getStatusIcon(bet.status)}
-                                  <div>
-                                    <p className="text-white font-medium">{bet.prop}</p>
-                                    <p className="text-gray-400 text-sm">
-                                      {bet.betType} • {bet.odds ? `+${bet.odds}` : 'No odds'}
-                                    </p>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center space-x-2">
-                                  <span className={`text-sm font-medium ${getStatusColor(bet.status)}`}>
-                                    {bet.status}
-                                  </span>
-                                  
-                                  {/* Payment Status */}
-                                  <div className="flex items-center space-x-1">
-                                    <DollarSign className={`h-4 w-4 ${bet.paid ? 'text-green-500' : 'text-red-500'}`} />
-                                    <button
-                                      onClick={() => updatePaymentStatus(bet.id, !bet.paid)}
-                                      className={`px-2 py-1 text-xs rounded transition-colors ${
-                                        bet.paid 
-                                          ? 'bg-green-600 hover:bg-green-700 text-white' 
-                                          : 'bg-red-600 hover:bg-red-700 text-white'
-                                      }`}
-                                    >
-                                      {bet.paid ? 'Paid' : 'Unpaid'}
-                                    </button>
-                                  </div>
-                                  
-                                  {/* Bet Status Controls */}
-                                  {bet.status === 'PENDING' && (
-                                    <div className="flex space-x-1">
-                                      <button
-                                        onClick={() => updateBetStatus(bet.id, 'HIT')}
-                                        className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
-                                      >
-                                        HIT
-                                      </button>
-                                      <button
-                                        onClick={() => updateBetStatus(bet.id, 'BOZO')}
-                                        className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 transition-colors"
-                                      >
-                                        BOZO
-                                      </button>
-                                      <button
-                                        onClick={() => updateBetStatus(bet.id, 'PUSH')}
-                                        className="px-2 py-1 bg-yellow-600 text-white text-xs rounded hover:bg-yellow-700 transition-colors"
-                                      >
-                                        PUSH
-                                      </button>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                        {/* Bet Status Management Table */}
+                        <div className="bg-gray-600 rounded-lg p-4">
+                          <h5 className="text-white font-medium mb-3">
+                            {betTypeFilter === 'BOZO' ? '🎯 Bozo Bet Management' : '⭐ Favorite Pick Management'}
+                          </h5>
+                          
+                          {memberBets.length === 0 ? (
+                            <p className="text-gray-400 text-sm">No {betTypeFilter.toLowerCase()} bets for this week</p>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead>
+                                  <tr className="border-b border-gray-500">
+                                    <th className="text-left py-2 text-gray-300">Bet Submitted</th>
+                                    <th className="text-left py-2 text-gray-300">Live Odds</th>
+                                    <th className="text-center py-2 text-gray-300">
+                                      {betTypeFilter === 'BOZO' ? 'Hit/Bozo' : 'Hit/Miss'}
+                                    </th>
+                                    <th className="text-center py-2 text-gray-300">Payment</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {memberBets.map((bet) => (
+                                    <tr key={bet.id} className="border-b border-gray-500">
+                                      <td className="py-2">
+                                        <div className="flex items-center space-x-2">
+                                          {getStatusIcon(bet.status)}
+                                          <span className="text-white font-medium">{bet.prop}</span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2 text-gray-300">
+                                        {bet.odds ? `+${bet.odds}` : 'No odds'}
+                                      </td>
+                                      <td className="py-2">
+                                        <div className="flex justify-center space-x-1">
+                                          <button
+                                            onClick={() => updateBetStats(member.id, 'hit', 1)}
+                                            className="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                                            title="Add Hit"
+                                          >
+                                            ✅
+                                          </button>
+                                          <button
+                                            onClick={() => updateBetStats(member.id, betTypeFilter === 'BOZO' ? 'bozo' : 'favMiss', 1)}
+                                            className={`px-2 py-1 text-white text-xs rounded transition-colors ${
+                                              betTypeFilter === 'BOZO' 
+                                                ? 'bg-red-600 hover:bg-red-700' 
+                                                : 'bg-yellow-600 hover:bg-yellow-700'
+                                            }`}
+                                            title={betTypeFilter === 'BOZO' ? 'Add Bozo' : 'Add Miss'}
+                                          >
+                                            {betTypeFilter === 'BOZO' ? '❌' : '🤔'}
+                                          </button>
+                                        </div>
+                                      </td>
+                                      <td className="py-2">
+                                        <div className="flex justify-center">
+                                          <button
+                                            onClick={() => updatePaymentStatus(bet.id, !bet.paid)}
+                                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                                              bet.paid 
+                                                ? 'bg-green-600 hover:bg-green-700 text-white' 
+                                                : 'bg-red-600 hover:bg-red-700 text-white'
+                                            }`}
+                                          >
+                                            {bet.paid ? 'Paid' : 'Unpaid'}
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )
                   })}

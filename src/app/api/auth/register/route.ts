@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { hashPassword, validatePassword, createSession } from '@/lib/auth'
+import { sendEmail, generateWelcomeEmail } from '@/lib/emailService'
 import { z } from 'zod'
 
 const registerSchema = z.object({
@@ -62,6 +63,15 @@ export async function POST(request: NextRequest) {
 
     // Create session
     const token = await createSession(user.id)
+
+    // Send welcome email
+    try {
+      const welcomeEmail = generateWelcomeEmail(user.name, user.email)
+      await sendEmail(welcomeEmail)
+    } catch (error) {
+      console.error('Failed to send welcome email:', error)
+      // Don't fail registration if email fails
+    }
 
     return NextResponse.json({
       success: true,
