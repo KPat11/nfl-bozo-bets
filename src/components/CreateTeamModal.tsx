@@ -6,7 +6,7 @@ import { X, Users, Palette } from 'lucide-react'
 interface CreateTeamModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateTeam: (teamData: { name: string; description?: string; color?: string }) => void
+  onCreateTeam: (teamData: { name: string; description?: string; color?: string; lowestOdds?: number; highestOdds?: number }) => void
 }
 
 const TEAM_COLORS = [
@@ -26,7 +26,9 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    color: '#3b82f6'
+    color: '#3b82f6',
+    lowestOdds: -120,
+    highestOdds: 130
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -35,7 +37,7 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: name === 'lowestOdds' || name === 'highestOdds' ? parseInt(value) || 0 : value
     }))
   }
 
@@ -51,15 +53,23 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
       return
     }
 
+    if (formData.lowestOdds >= formData.highestOdds) {
+      setError('Lowest odds must be less than highest odds')
+      setLoading(false)
+      return
+    }
+
     try {
       await onCreateTeam({
         name: formData.name.trim(),
         description: formData.description.trim() || undefined,
-        color: formData.color
+        color: formData.color,
+        lowestOdds: formData.lowestOdds,
+        highestOdds: formData.highestOdds
       })
       
       // Reset form
-      setFormData({ name: '', description: '', color: '#3b82f6' })
+      setFormData({ name: '', description: '', color: '#3b82f6', lowestOdds: -120, highestOdds: 130 })
       setError('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create team')
@@ -139,6 +149,58 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
             <div className="mt-2 flex items-center space-x-2">
               <Palette className="h-4 w-4 text-gray-400" />
               <span className="text-sm text-gray-400">Selected: {formData.color}</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-white">Betting Odds Range</h3>
+            <p className="text-sm text-gray-400">
+              Set the minimum and maximum odds allowed for bets in this team
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Lowest Odds (Most Negative)
+                </label>
+                <input
+                  type="number"
+                  name="lowestOdds"
+                  value={formData.lowestOdds}
+                  onChange={handleChange}
+                  min="-9999999"
+                  max="9999999"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="-120"
+                />
+                <p className="text-xs text-gray-500 mt-1">e.g., -120 (favorite)</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Highest Odds (Most Positive)
+                </label>
+                <input
+                  type="number"
+                  name="highestOdds"
+                  value={formData.highestOdds}
+                  onChange={handleChange}
+                  min="-9999999"
+                  max="9999999"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="130"
+                />
+                <p className="text-xs text-gray-500 mt-1">e.g., +130 (underdog)</p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-sm text-blue-300">
+                <strong>Current Range:</strong> {formData.lowestOdds} to {formData.highestOdds}
+              </p>
+              <p className="text-xs text-blue-400 mt-1">
+                Team members can only submit bets within this odds range
+              </p>
             </div>
           </div>
 

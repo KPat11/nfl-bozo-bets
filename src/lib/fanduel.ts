@@ -1,5 +1,6 @@
 import { prisma } from './db'
 import { updateBozoStats } from './bozoStats'
+import { getTransportManager, FanDuelData } from './transportProtocols'
 
 export interface FanDuelProp {
   id: string
@@ -22,6 +23,34 @@ export interface FanDuelProp {
 // 1. Use a sports data API like The Odds API, SportsRadar, or similar
 // 2. Set up webhooks or scheduled jobs to fetch updated data
 // 3. Handle authentication and rate limiting
+
+/**
+ * Send FanDuel data via TCP for reliable delivery
+ */
+export async function sendFanDuelDataViaTCP(prop: FanDuelProp): Promise<boolean> {
+  try {
+    const transportManager = getTransportManager()
+    
+    const fanDuelData: FanDuelData = {
+      id: prop.id,
+      player: prop.player,
+      team: prop.team,
+      prop: prop.prop,
+      line: prop.line,
+      odds: prop.odds,
+      week: prop.week,
+      season: prop.season,
+      timestamp: Date.now()
+    }
+    
+    await transportManager.sendFanDuelData(fanDuelData)
+    console.log(`FanDuel data sent via TCP: ${prop.id}`)
+    return true
+  } catch (error) {
+    console.error('Error sending FanDuel data via TCP:', error)
+    return false
+  }
+}
 
 export async function fetchFanDuelProps(week: number, season: number): Promise<FanDuelProp[]> {
   // Mock data for demonstration

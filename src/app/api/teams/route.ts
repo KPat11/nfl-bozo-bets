@@ -5,7 +5,9 @@ import { z } from 'zod'
 const createTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required').max(50, 'Team name too long'),
   description: z.string().optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional()
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
+  lowestOdds: z.number().int().min(-9999999).max(9999999).optional(),
+  highestOdds: z.number().int().min(-9999999).max(9999999).optional()
 })
 
 export async function GET() {
@@ -39,15 +41,17 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Creating team...')
     
     const body = await request.json()
-    const { name, description, color } = createTeamSchema.parse(body)
+    const { name, description, color, lowestOdds, highestOdds } = createTeamSchema.parse(body)
 
-    console.log('📝 Team data:', { name, description, color })
+    console.log('📝 Team data:', { name, description, color, lowestOdds, highestOdds })
 
     const team = await prisma.team.create({
       data: {
         name,
         description,
-        color: color || '#3b82f6' // Default blue color
+        color: color || '#3b82f6', // Default blue color
+        lowestOdds: lowestOdds || -120, // Default lowest odds
+        highestOdds: highestOdds || 130 // Default highest odds
       }
     })
 

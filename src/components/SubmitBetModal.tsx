@@ -62,6 +62,13 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     warning?: string
     confidence?: number
   } | null>(null)
+  const [oddsAvailability, setOddsAvailability] = useState<{
+    available: boolean
+    odds?: number
+    confidence: 'high' | 'medium' | 'low' | 'none'
+    message: string
+    source: string
+  } | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [searchSuggestions, setSearchSuggestions] = useState<string[]>([])
 
@@ -193,16 +200,63 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     }
     
     const timeout = setTimeout(() => {
-      if (value.trim().length > 3) {
+      if (value.trim().length > 2) { // Reduced threshold for faster response
         searchForProp(value)
+        checkOddsAvailability(value) // Also check odds availability
       } else {
         setPropMatchResult(null)
         setSearchSuggestions([])
+        setOddsAvailability(null)
+        // Clear odds when prop is cleared
+        setFormData(prev => ({ ...prev, odds: '', fanduelId: '' }))
       }
-    }, 500)
+    }, 300) // Reduced debounce time for faster response
     
     setSearchTimeout(timeout)
   }
+
+  // Function to manually refresh odds for current prop
+  const refreshOdds = useCallback(async () => {
+    if (formData.prop.trim()) {
+      await searchForProp(formData.prop)
+    }
+  }, [formData.prop, searchForProp])
+
+  // Function to check odds availability
+  const checkOddsAvailability = useCallback(async (propText: string) => {
+    if (!propText.trim()) {
+      setOddsAvailability(null)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/odds-availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          player: propText.split(' ')[0] + ' ' + propText.split(' ')[1], // First two words as player name
+          prop: propText.split(' ').slice(2).join(' '), // Rest as prop type
+          week,
+          season
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setOddsAvailability(data.result)
+        
+        // If odds are available, auto-fill them
+        if (data.result.available && data.result.odds) {
+          setFormData(prev => ({
+            ...prev,
+            odds: data.result.odds.toString()
+          }))
+        }
+      }
+    } catch (error) {
+      console.error('Error checking odds availability:', error)
+    }
+  }, [week, season])
 
   useEffect(() => {
     if (isOpen) {
@@ -237,6 +291,23 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       }
     }
   }, [isOpen, week, season, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval]) // Include all dependencies
+
+  // Keyboard handlers
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return
+      
+      if (e.key === 'Escape') {
+        onClose()
+      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault()
+        handleSubmit(e as any)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -444,7 +515,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   })
                 }}
                 required
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               >
                 <option value="">Select a team member</option>
                 {getFilteredUsers().map(user => (
@@ -590,9 +661,20 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Odds (optional)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-300">
+                Odds (auto-filled from FanDuel)
+              </label>
+              <button
+                type="button"
+                onClick={refreshOdds}
+                disabled={!formData.prop.trim() || isSearching}
+                className="flex items-center space-x-1 px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors"
+              >
+                <span>🔄</span>
+                <span>Refresh</span>
+              </button>
+            </div>
             <div className="flex items-center space-x-3">
               <button
                 type="button"
@@ -613,7 +695,6 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               </button>
               
               <div className="flex-1 relative">
-                <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="number"
                   name="odds"
@@ -622,9 +703,21 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   step="0.5"
                   min="-50"
                   max="50"
-                  className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center"
+                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center ${
+                    formData.fanduelId ? 'border-green-500 bg-green-900/20' : 'border-gray-600'
+                  }`}
                   placeholder="0.0"
                 />
+                {formData.fanduelId && (
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <span className="text-green-400 text-xs">✓ FanDuel</span>
+                  </div>
+                )}
+                {isSearching && !formData.fanduelId && (
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
               </div>
               
               <button
@@ -646,7 +739,26 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               </button>
             </div>
             <div className="mt-2 text-xs text-gray-400 text-center">
-              Use buttons or type directly. Range: -50 to +50
+              {formData.fanduelId ? (
+                <span className="text-green-400">✓ Auto-filled from FanDuel. Adjust if needed.</span>
+              ) : oddsAvailability ? (
+                <div className="space-y-1">
+                  <div className={`${
+                    oddsAvailability.available 
+                      ? 'text-green-400' 
+                      : oddsAvailability.confidence === 'low' 
+                        ? 'text-yellow-400' 
+                        : 'text-red-400'
+                  }`}>
+                    {oddsAvailability.available ? '✓' : '⚠️'} {oddsAvailability.message}
+                  </div>
+                  <div className="text-gray-500 text-xs">
+                    Source: {oddsAvailability.source.replace('_', ' ')}
+                  </div>
+                </div>
+              ) : (
+                <span>Use buttons or type directly. Range: -50 to +50</span>
+              )}
             </div>
           </div>
 

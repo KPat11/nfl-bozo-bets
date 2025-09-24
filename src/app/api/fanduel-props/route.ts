@@ -20,7 +20,14 @@ export async function GET(request: NextRequest) {
       await fetchFanDuelProps(weekNum, seasonNum)
     }
 
-    const props = await getAvailableProps(weekNum, seasonNum)
+    let props = await getAvailableProps(weekNum, seasonNum)
+    
+    // If no props in database, return mock data
+    if (props.length === 0) {
+      const { fetchFanDuelProps } = await import('@/lib/fanduel')
+      props = await fetchFanDuelProps(weekNum, seasonNum)
+    }
+    
     return NextResponse.json(props)
   } catch (error) {
     console.error('Error fetching FanDuel props:', error)

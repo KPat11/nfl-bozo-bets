@@ -5,7 +5,9 @@ import { z } from 'zod'
 const updateTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required').max(50, 'Team name too long'),
   description: z.string().optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional()
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format').optional(),
+  lowestOdds: z.number().int().min(-9999999).max(9999999).optional(),
+  highestOdds: z.number().int().min(-9999999).max(9999999).optional()
 })
 
 export async function PUT(
@@ -15,7 +17,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { name, description, color } = updateTeamSchema.parse(body)
+    const { name, description, color, lowestOdds, highestOdds } = updateTeamSchema.parse(body)
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatedTeam = await (prisma as any).team.update({
@@ -24,6 +26,8 @@ export async function PUT(
         name,
         description,
         color: color || '#3b82f6',
+        lowestOdds: lowestOdds !== undefined ? lowestOdds : -120,
+        highestOdds: highestOdds !== undefined ? highestOdds : 130,
         updatedAt: new Date()
       },
       include: {

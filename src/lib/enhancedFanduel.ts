@@ -33,14 +33,14 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
   {
     id: 'fd-1',
     fanduelId: 'fd-1',
-    player: 'Josh Allen',
+    player: 'Josh Allen Bills',
     team: 'Bills',
     prop: 'Passing Yards',
     line: 250.5,
     odds: -110,
     overOdds: -110,
     underOdds: -110,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T18:00:00Z',
     status: 'PENDING',
@@ -56,7 +56,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: -115,
     overOdds: -115,
     underOdds: -105,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T20:20:00Z',
     status: 'PENDING',
@@ -72,7 +72,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: -110,
     overOdds: -110,
     underOdds: -110,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T16:25:00Z',
     status: 'PENDING',
@@ -88,7 +88,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: -105,
     overOdds: -105,
     underOdds: -115,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T13:00:00Z',
     status: 'PENDING',
@@ -104,7 +104,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: -120,
     overOdds: -120,
     underOdds: +100,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T13:00:00Z',
     status: 'PENDING',
@@ -120,7 +120,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: -110,
     overOdds: -110,
     underOdds: -110,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T16:25:00Z',
     status: 'PENDING',
@@ -136,7 +136,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: -105,
     overOdds: -105,
     underOdds: -115,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T13:00:00Z',
     status: 'PENDING',
@@ -152,7 +152,7 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     odds: +120,
     overOdds: +120,
     underOdds: -140,
-    week: 1,
+    week: 4,
     season: 2025,
     gameTime: '2025-01-15T18:00:00Z',
     status: 'PENDING',
@@ -202,14 +202,33 @@ export async function findMatchingProp(
       }
     }
     
-    // Strategy 2: Player name + prop type match
+    // Strategy 2: Player name + prop type match (without team)
     if (player && prop) {
       for (const propData of allProps) {
-        const propDataNormalized = normalizePropText(`${propData.player} ${propData.prop}`)
+        // Extract just the player name without team
+        const propPlayerName = propData.player.split(' ').slice(0, -1).join(' ') // Remove last word (team)
+        const propDataNormalized = normalizePropText(`${propPlayerName} ${propData.prop}`)
         const searchNormalized = normalizePropText(`${player} ${prop}`)
         
         if (propDataNormalized === searchNormalized) {
           const confidence = 0.9
+          if (confidence > bestConfidence) {
+            bestMatch = { ...propData, confidence, originalText: propText }
+            bestConfidence = confidence
+          }
+        }
+      }
+    }
+
+    // Strategy 3: Simple player name match (for cases where prop is not specified)
+    if (player && !prop) {
+      for (const propData of allProps) {
+        const propPlayerName = propData.player.split(' ').slice(0, -1).join(' ') // Remove last word (team)
+        const propDataNormalized = normalizePropText(propPlayerName)
+        const searchNormalized = normalizePropText(player)
+        
+        if (propDataNormalized === searchNormalized) {
+          const confidence = 0.8
           if (confidence > bestConfidence) {
             bestMatch = { ...propData, confidence, originalText: propText }
             bestConfidence = confidence

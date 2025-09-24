@@ -56,7 +56,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     fetchTeams()
   }, [])
 
-  const handleCreateTeam = async (teamData: { name: string; description?: string; color?: string }) => {
+  const handleCreateTeam = async (teamData: { name: string; description?: string; color?: string; lowestOdds?: number; highestOdds?: number }) => {
     try {
       const response = await fetch('/api/teams', {
         method: 'POST',

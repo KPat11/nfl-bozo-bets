@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { sendBetStatusUpdate } from '@/lib/fastDataService'
 import { canSubmitBetForWeek } from '@/lib/nflWeekUtils'
 
 const createWeeklyBetSchema = z.object({
@@ -75,6 +76,19 @@ export async function POST(request: NextRequest) {
       VALUES (gen_random_uuid(), ${userId}, ${week}, ${season}, ${prop}, ${odds || null}, ${fanduelId || null}, 'PENDING', ${betType}, NOW(), NOW())
       RETURNING *
     `
+
+    // Send fast update via UDP
+    try {
+      await sendBetStatusUpdate({
+        betId: Array.isArray(weeklyBet) && weeklyBet.length > 0 ? weeklyBet[0].id : 'unknown',
+        userId,
+        status: 'PENDING',
+        timestamp: Date.now()
+      })
+    } catch (udpError) {
+      console.error('Failed to send UDP bet status update:', udpError)
+      // Don't fail the request if UDP fails
+    }
 
     return NextResponse.json(weeklyBet, { status: 201 })
   } catch (error) {

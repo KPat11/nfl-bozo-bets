@@ -233,6 +233,26 @@ export function extractPlayerAndTeam(propText: string): { player: string; team: 
     const teamIndex = normalized.indexOf(team)
     player = normalized.substring(0, teamIndex).trim()
     prop = normalized.substring(teamIndex + team.length).trim()
+  } else {
+    // If no team found, try to extract player name from common patterns
+    // Look for patterns like "Player Name Prop Type" (e.g., "Josh Allen Passing Yards")
+    const words = normalized.split(' ')
+    
+    // Common prop types that indicate the end of player name
+    const propIndicators = ['passing', 'rushing', 'receiving', 'yards', 'touchdowns', 'receptions', 'completions', 'attempts', 'over', 'under']
+    
+    let playerEndIndex = words.length
+    for (let i = 0; i < words.length; i++) {
+      if (propIndicators.includes(words[i])) {
+        playerEndIndex = i
+        break
+      }
+    }
+    
+    if (playerEndIndex > 0) {
+      player = words.slice(0, playerEndIndex).join(' ')
+      prop = words.slice(playerEndIndex).join(' ')
+    }
   }
   
   return { player, team, prop }

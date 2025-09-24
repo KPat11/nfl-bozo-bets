@@ -14,6 +14,7 @@ import StatsManagementModal from '@/components/StatsManagementModal'
 import TeamManagementModal from '@/components/TeamManagementModal'
 import AuthModal from '@/components/AuthModal'
 import WelcomeModal from '@/components/WelcomeModal'
+import { getCurrentNFLWeek } from '@/lib/nflWeekUtils'
 
 interface User {
   id: string
@@ -58,7 +59,10 @@ interface Payment {
 export default function Home() {
   const [users, setUsers] = useState<User[]>([])
   const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentWeek, setCurrentWeek] = useState(3) // Week 3 of NFL season
+  const [currentWeek, setCurrentWeek] = useState(() => {
+    const weekInfo = getCurrentNFLWeek(2025)
+    return weekInfo ? weekInfo.week : 4 // Default to week 4 if calculation fails
+  })
   const [currentSeason] = useState(2025)
   const [loading, setLoading] = useState(true)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
@@ -261,6 +265,24 @@ export default function Home() {
     fetchUsers()
     checkForBiggestBozo()
   }, [fetchUsers, checkForBiggestBozo]) // Include dependencies to fix ESLint warnings
+
+  // Update current week periodically
+  useEffect(() => {
+    const updateCurrentWeek = () => {
+      const weekInfo = getCurrentNFLWeek(2025)
+      if (weekInfo && weekInfo.week !== currentWeek) {
+        setCurrentWeek(weekInfo.week)
+      }
+    }
+
+    // Update immediately
+    updateCurrentWeek()
+
+    // Update every hour
+    const interval = setInterval(updateCurrentWeek, 60 * 60 * 1000)
+
+    return () => clearInterval(interval)
+  }, [currentWeek])
 
   useEffect(() => {
     checkForBiggestBozo()

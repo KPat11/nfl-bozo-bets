@@ -6,6 +6,8 @@ interface Team {
   name: string
   description?: string
   color?: string
+  lowestOdds?: number
+  highestOdds?: number
   createdAt: string
   updatedAt: string
   users: Array<{
@@ -46,7 +48,9 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
   const [formData, setFormData] = useState({
     name: team?.name || '',
     description: team?.description || '',
-    color: team?.color || '#3b82f6'
+    color: team?.color || '#3b82f6',
+    lowestOdds: team?.lowestOdds || -120,
+    highestOdds: team?.highestOdds || 130
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -87,7 +91,9 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
       setFormData({
         name: team.name,
         description: team.description || '',
-        color: team.color || '#3b82f6'
+        color: team.color || '#3b82f6',
+        lowestOdds: team.lowestOdds || -120,
+        highestOdds: team.highestOdds || 130
       })
       updateMemberLists()
     }
@@ -195,7 +201,9 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
         body: JSON.stringify({
           name: formData.name.trim(),
           description: formData.description.trim() || undefined,
-          color: formData.color
+          color: formData.color,
+          lowestOdds: formData.lowestOdds,
+          highestOdds: formData.highestOdds
         }),
       })
 
@@ -287,6 +295,58 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
                 style={{ backgroundColor: formData.color }}
               ></div>
               <span className="text-sm text-gray-400">Selected color</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium text-white">Betting Odds Range</h3>
+            <p className="text-sm text-gray-400">
+              Set the minimum and maximum odds allowed for bets in this team
+            </p>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Lowest Odds (Most Negative)
+                </label>
+                <input
+                  type="number"
+                  name="lowestOdds"
+                  value={formData.lowestOdds}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lowestOdds: parseInt(e.target.value) || 0 }))}
+                  min="-9999999"
+                  max="9999999"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="-120"
+                />
+                <p className="text-xs text-gray-500 mt-1">e.g., -120 (favorite)</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Highest Odds (Most Positive)
+                </label>
+                <input
+                  type="number"
+                  name="highestOdds"
+                  value={formData.highestOdds}
+                  onChange={(e) => setFormData(prev => ({ ...prev, highestOdds: parseInt(e.target.value) || 0 }))}
+                  min="-9999999"
+                  max="9999999"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="130"
+                />
+                <p className="text-xs text-gray-500 mt-1">e.g., +130 (underdog)</p>
+              </div>
+            </div>
+            
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-lg p-3">
+              <p className="text-sm text-blue-300">
+                <strong>Current Range:</strong> {formData.lowestOdds} to {formData.highestOdds}
+              </p>
+              <p className="text-xs text-blue-400 mt-1">
+                Team members can only submit bets within this odds range
+              </p>
             </div>
           </div>
 

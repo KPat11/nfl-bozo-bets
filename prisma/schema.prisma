@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 model User {
@@ -43,6 +43,8 @@ model Team {
   color       String?
   biggestBozoId String?  // Current BIGGEST BOZO
   isLocked    Boolean  @default(false) // Team access control
+  lowestOdds  Int?     @default(-120) // Lowest allowed odds (e.g., -120)
+  highestOdds Int?     @default(130)  // Highest allowed odds (e.g., +130)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   users         User[]
@@ -224,4 +226,15 @@ model TeamInvitation {
   inviter   User     @relation("TeamInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
 
   @@map("team_invitations")
+}
+
+model ApiUsage {
+  id           String   @id @default(cuid())
+  month        String   @unique // YYYY-MM format
+  requestsUsed Int      @default(0)
+  lastReset    DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("api_usage")
 }
