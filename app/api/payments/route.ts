@@ -17,14 +17,14 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
 
     // Validate status parameter
-    const validStatuses = ['PENDING', 'PAID', 'FAILED', 'REFUNDED'] as const
+    const validStatuses = ['PENDING', 'PAID', 'OVERDUE', 'CANCELLED'] as const
     const isValidStatus = status && validStatuses.includes(status as any)
 
     const payments = await prisma.payment.findMany({
       where: {
         ...(userId ? { userId } : {}),
         ...(weeklyBetId ? { weeklyBetId } : {}),
-        ...(isValidStatus ? { status: status as 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' } : {})
+        ...(isValidStatus ? { status: status as 'PENDING' | 'PAID' | 'OVERDUE' | 'CANCELLED' } : {})
       },
       include: {
         user: true,
