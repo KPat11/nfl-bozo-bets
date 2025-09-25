@@ -30,6 +30,72 @@ export interface PropMatchResult {
 
 // Enhanced mock data with more realistic props
 const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
+  // Team-based props (moneyline, spread, total)
+  {
+    id: 'fd-team-1',
+    fanduelId: 'fd-team-1',
+    player: 'Cardinals',
+    team: 'Cardinals',
+    prop: 'Moneyline',
+    line: 0,
+    odds: +150,
+    overOdds: +150,
+    underOdds: -180,
+    week: 4,
+    season: 2025,
+    gameTime: '2025-01-15T18:00:00Z',
+    status: 'PENDING',
+    confidence: 1.0
+  },
+  {
+    id: 'fd-team-2',
+    fanduelId: 'fd-team-2',
+    player: 'Eagles',
+    team: 'Eagles',
+    prop: 'Moneyline',
+    line: 0,
+    odds: -180,
+    overOdds: -180,
+    underOdds: +150,
+    week: 4,
+    season: 2025,
+    gameTime: '2025-01-15T18:00:00Z',
+    status: 'PENDING',
+    confidence: 1.0
+  },
+  {
+    id: 'fd-team-3',
+    fanduelId: 'fd-team-3',
+    player: 'Cardinals',
+    team: 'Cardinals',
+    prop: 'Spread',
+    line: 3.5,
+    odds: -110,
+    overOdds: -110,
+    underOdds: -110,
+    week: 4,
+    season: 2025,
+    gameTime: '2025-01-15T18:00:00Z',
+    status: 'PENDING',
+    confidence: 1.0
+  },
+  {
+    id: 'fd-team-4',
+    fanduelId: 'fd-team-4',
+    player: 'Cardinals vs Eagles',
+    team: 'Cardinals',
+    prop: 'Total',
+    line: 45.5,
+    odds: -110,
+    overOdds: -110,
+    underOdds: -110,
+    week: 4,
+    season: 2025,
+    gameTime: '2025-01-15T18:00:00Z',
+    status: 'PENDING',
+    confidence: 1.0
+  },
+  // Player-based props
   {
     id: 'fd-1',
     fanduelId: 'fd-1',
@@ -198,6 +264,21 @@ export async function findMatchingProp(
           found: true,
           prop: { ...propData, confidence: 1.0, originalText: propText },
           confidence: 1.0
+        }
+      }
+    }
+    
+    // Strategy 1.5: Team-based props (moneyline, spread, total)
+    const { team, prop } = extractPlayerAndTeam(propText)
+    if (team && prop && ['moneyline', 'spread', 'total'].includes(prop.toLowerCase())) {
+      for (const propData of allProps) {
+        if (propData.team.toLowerCase() === team.toLowerCase() && 
+            propData.prop.toLowerCase() === prop.toLowerCase()) {
+          return {
+            found: true,
+            prop: { ...propData, confidence: 1.0, originalText: propText },
+            confidence: 1.0
+          }
         }
       }
     }

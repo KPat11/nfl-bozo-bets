@@ -311,7 +311,7 @@ export default function Home() {
 
   const getCurrentWeekBets = () => {
     return users.flatMap(user => 
-      user.weeklyBets.filter(bet => bet.week === currentWeek && bet.season === currentSeason)
+      user.weeklyBets?.filter(bet => bet.week === currentWeek && bet.season === currentSeason) || []
     )
   }
 
@@ -325,7 +325,7 @@ export default function Home() {
 
   const getUnpaidBets = () => {
     return getCurrentWeekBets().filter(bet => 
-      !bet.payments.some(payment => payment.status === 'PAID')
+      !bet.payments?.some(payment => payment.status === 'PAID')
     )
   }
 
@@ -362,7 +362,7 @@ export default function Home() {
 
   // Calculate running records
   const getUserRecord = (user: User, type: 'total' | 'bozo' | 'favorite') => {
-    let bets = user.weeklyBets.filter(bet => bet.season === currentSeason)
+    let bets = user.weeklyBets?.filter(bet => bet.season === currentSeason) || []
     
     if (type === 'bozo') {
       bets = bets.filter(bet => bet.betType === 'BOZO')
@@ -747,7 +747,7 @@ export default function Home() {
                       <div className="divide-y divide-gray-700">
                         {getBozoBets().map((bet) => {
                           const user = users.find(u => u.id === bet.userId)
-                          const isPaid = bet.payments.some(p => p.status === 'PAID')
+                          const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                           
                           return (
                             <div key={bet.id} className="p-4 hover:bg-gray-750 transition-colors">
@@ -860,7 +860,7 @@ export default function Home() {
                         ) : (
                           getBozoBets().map((bet) => {
                             const user = users.find(u => u.id === bet.userId)
-                            const isPaid = bet.payments.some(p => p.status === 'PAID')
+                            const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                             
                             return (
                               <tr key={bet.id} className="hover:bg-gray-750 transition-colors">
@@ -1001,7 +1001,7 @@ export default function Home() {
               <div className="divide-y divide-gray-700">
                 {getFavoriteBets().map((bet) => {
                   const user = users.find(u => u.id === bet.userId)
-                  const isPaid = bet.payments.some(p => p.status === 'PAID')
+                            const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                   
                   return (
                     <div key={bet.id} className="p-4 hover:bg-gray-750 transition-colors">
@@ -1104,7 +1104,7 @@ export default function Home() {
                 ) : (
                   getFavoriteBets().map((bet) => {
                     const user = users.find(u => u.id === bet.userId)
-                    const isPaid = bet.payments.some(p => p.status === 'PAID')
+                            const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                     
                     return (
                       <tr key={bet.id} className="hover:bg-gray-750 transition-colors">

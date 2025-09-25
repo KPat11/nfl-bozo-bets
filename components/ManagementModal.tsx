@@ -279,18 +279,18 @@ export default function ManagementModal({
                   </div>
                 ) : (
                   <div className="space-y-6">
-                    {teamMembers.map((member) => (
+                    {teamMembers?.map((member) => (
                       <div key={member.id} className="bg-gray-700 rounded-lg p-4">
                         <div className="flex items-center space-x-3 mb-3">
                           <User className="h-5 w-5 text-gray-400" />
                           <h4 className="font-medium text-white">{member.name}</h4>
                         </div>
                         
-                        {member.weeklyBets.length === 0 ? (
+                        {member.weeklyBets?.length === 0 ? (
                           <p className="text-gray-400 text-sm">No bets for this week</p>
                         ) : (
                           <div className="space-y-2">
-                            {member.weeklyBets.map((bet) => (
+                            {member.weeklyBets?.map((bet) => (
                               <div key={bet.id} className="flex items-center justify-between bg-gray-600 rounded p-3">
                                 <div className="flex items-center space-x-3">
                                   {getStatusIcon(bet.status)}
@@ -380,7 +380,7 @@ export default function ManagementModal({
                           <select
                             value={selectedUser?.id || ''}
                             onChange={(e) => {
-                              const user = teamMembers.find(m => m.id === e.target.value)
+                              const user = teamMembers?.find(m => m.id === e.target.value)
                               if (user) {
                                 setSelectedUser(user as User)
                                 setManualStats({ totalBozos: 0, totalHits: 0 })
@@ -389,7 +389,7 @@ export default function ManagementModal({
                             className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                           >
                             <option value="">Select a user...</option>
-                            {teamMembers.map((member) => (
+                            {teamMembers?.map((member) => (
                               <option key={member.id} value={member.id}>
                                 {member.name}
                               </option>

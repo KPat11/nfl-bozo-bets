@@ -91,7 +91,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
   }
 
   const handleTeamUpdated = (updatedTeam: Team) => {
-    setTeams(teams.map(team => team.id === updatedTeam.id ? updatedTeam : team))
+    setTeams(teams?.map(team => team.id === updatedTeam.id ? updatedTeam : team) || [])
     setShowEditModal(false)
     setEditingTeam(null)
     setSuccess(`Team "${updatedTeam.name}" updated successfully!`)
@@ -116,7 +116,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
         throw new Error(errorData.error || 'Failed to delete team')
       }
 
-      setTeams(teams.filter(team => team.id !== teamId))
+      setTeams(teams?.filter(team => team.id !== teamId) || [])
       setSuccess(`Team "${teamName}" deleted successfully!`)
       onTeamCreated()
       
@@ -171,7 +171,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
       const data = await response.json()
 
       if (data.success) {
-        setTeams(teams.map(team => 
+        setTeams(teams?.map(team => 
           team.id === teamId ? { ...team, isLocked: !isLocked } : team
         ))
         setSuccess(`Team ${!isLocked ? 'locked' : 'unlocked'} successfully`)
@@ -235,7 +235,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teams.map(team => (
+            {teams?.map(team => (
               <div
                 key={team.id}
                 className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors"
@@ -289,7 +289,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
                 {team.users.length > 0 && (
                   <div className="mt-3 space-y-1">
-                    {team.users.slice(0, 3).map(user => (
+                    {team.users?.slice(0, 3).map(user => (
                       <div key={user.id} className="text-xs text-gray-400">
                         {user.name}
                       </div>

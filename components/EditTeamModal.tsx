@@ -77,7 +77,7 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
 
     const members = team.users || []
     const available = allUsers.filter(user => 
-      !members.some(member => member.id === user.id) && 
+      !members?.some(member => member.id === user.id) && 
       (user.teamId === null || user.teamId === undefined || user.teamId !== team.id)
     )
 
