@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const joinSchema = z.object({
@@ -13,20 +13,26 @@ export async function POST(request: NextRequest) {
     const { token, userId } = joinSchema.parse(body)
 
     // Find valid invitation
-    const invitation = await blobStorage.getTeamInvitation(token)
+    const invitation = await prisma.teamInvitation.findUnique({
+      where: { token }
+    })
 
     if (!invitation || invitation.used || new Date(invitation.expiresAt) < new Date()) {
       return NextResponse.json({ error: 'Invalid or expired invitation' }, { status: 400 })
     }
 
     // Get team details
-    const team = await blobStorage.getTeam(invitation.teamId)
+    const team = await prisma.team.findUnique({
+      where: { id: invitation.teamId }
+    })
     if (!team) {
       return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
 
     // Verify user exists and get their email
-    const user = await blobStorage.getUser(userId)
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
 
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -43,10 +49,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Add user to team
-    await blobStorage.updateUser(userId, { teamId: invitation.teamId })
+    await prisma.user.update({
+      where: { id: userId },
+      data: { teamId: invitation.teamId }
+    })
 
     // Mark invitation as used
-    await blobStorage.updateTeamInvitation(token, { used: true })
+    await prisma.teamInvitation.update({
+      where: { token },
+      data: { used: true }
+    })
 
     return NextResponse.json({
       success: true,

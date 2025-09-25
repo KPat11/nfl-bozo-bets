@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const createTeamSchema = z.object({
@@ -14,25 +14,23 @@ export async function GET() {
   try {
     console.log('🔍 Fetching teams...')
     
-    const teams = await blobStorage.getTeams()
-
-    // Add user data to each team
-    const teamsWithUsers = await Promise.all(teams.map(async (team) => {
-      const users = await blobStorage.getUsers()
-      const teamUsers = users.filter(user => user.teamId === team.id)
-      
-      return {
-        ...team,
-        users: teamUsers.map(user => ({
-          id: user.id,
-          name: user.name,
-          email: user.email
-        }))
+    const teams = await prisma.team.findMany({
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
-    }))
+    })
 
-    console.log('✅ Teams fetched successfully:', teamsWithUsers.length, 'teams')
-    return NextResponse.json(teamsWithUsers)
+    console.log('✅ Teams fetched successfully:', teams.length, 'teams')
+    return NextResponse.json(teams)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
     // Return empty array instead of error to prevent frontend crashes
@@ -49,13 +47,15 @@ export async function POST(request: NextRequest) {
 
     console.log('📝 Team data:', { name, description, color, lowestOdds, highestOdds })
 
-    const team = await blobStorage.createTeam({
-      name,
-      description,
-      color: color || '#3b82f6', // Default blue color
-      lowestOdds: lowestOdds || -120, // Default lowest odds
-      highestOdds: highestOdds || 130, // Default highest odds
-      isLocked: false
+    const team = await prisma.team.create({
+      data: {
+        name,
+        description: description || null,
+        color: color || '#3b82f6', // Default blue color
+        lowestOdds: lowestOdds || -120, // Default lowest odds
+        highestOdds: highestOdds || 130, // Default highest odds
+        isLocked: false
+      }
     })
 
     console.log('✅ Team created successfully:', team.name)

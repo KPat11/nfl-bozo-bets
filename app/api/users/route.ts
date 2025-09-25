@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 // TODO: Email functionality commented out for future iteration
 // import { sendWelcomeEmail } from '@/lib/email'
@@ -13,7 +13,15 @@ const createUserSchema = z.object({
 export async function GET() {
   try {
     // Fetch users with all available fields
-    const users = await blobStorage.getAllUsersWithBets()
+    const users = await prisma.user.findMany({
+      include: {
+        team: true,
+        weeklyBets: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
     // Try to add team data if available
     const usersWithTeams = await Promise.all(users.map(async (user) => {
@@ -27,7 +35,9 @@ export async function GET() {
           }
         }
 
-        const team = await blobStorage.getTeam(teamId)
+        const team = await prisma.team.findUnique({
+          where: { id: teamId }
+        })
         
         return {
           ...user,
@@ -66,7 +76,9 @@ export async function POST(request: NextRequest) {
     let team = null
     if (teamId) {
       try {
-        team = await blobStorage.getTeam(teamId)
+        team = await prisma.team.findUnique({
+          where: { id: teamId }
+        })
         if (!team) {
           return NextResponse.json({ error: 'Team not found' }, { status: 404 })
         }
@@ -89,7 +101,9 @@ export async function POST(request: NextRequest) {
       teamId: teamId || undefined
     }
 
-    const user = await blobStorage.createUser(userData)
+    const user = await prisma.user.create({
+      data: userData
+    })
     console.log('User created successfully:', user)
 
     // Try to add team data if available

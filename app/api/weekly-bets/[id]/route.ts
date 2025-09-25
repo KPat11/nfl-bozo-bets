@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const updateBetSchema = z.object({
@@ -18,19 +18,22 @@ export async function PUT(
     
     const { prop, odds, fanduelId } = updateBetSchema.parse(body)
 
-    const updatedBet = await blobStorage.updateWeeklyBet(id, {
-      prop,
-      odds: odds || undefined,
-      fanduelId: fanduelId || undefined
+    const updatedBet = await prisma.weeklyBet.update({
+      where: { id },
+      data: {
+        prop,
+        odds: odds || null,
+        fanduelId: fanduelId || null
+      }
     })
 
-    if (!updatedBet) {
-      return NextResponse.json({ error: 'Bet not found' }, { status: 404 })
-    }
-
     // Get user and payments data
-    const user = await blobStorage.getUser(updatedBet.userId)
-    const payments = await blobStorage.getPayments(id)
+    const user = await prisma.user.findUnique({
+      where: { id: updatedBet.userId }
+    })
+    const payments = await prisma.payment.findMany({
+      where: { weeklyBetId: id }
+    })
 
     return NextResponse.json({
       ...updatedBet,
@@ -56,18 +59,14 @@ export async function DELETE(
     const { id } = await params
 
     // Delete associated payments first
-    const payments = await blobStorage.getPayments(id)
-    for (const payment of payments) {
-      // Note: We don't have a deletePayment method yet, but we can implement it
-      console.log('Would delete payment:', payment.id)
-    }
+    await prisma.payment.deleteMany({
+      where: { weeklyBetId: id }
+    })
 
     // Delete the bet
-    const deleted = await blobStorage.deleteWeeklyBet(id)
-    
-    if (!deleted) {
-      return NextResponse.json({ error: 'Bet not found' }, { status: 404 })
-    }
+    const deleted = await prisma.weeklyBet.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ message: 'Bet deleted successfully' })
   } catch (error) {

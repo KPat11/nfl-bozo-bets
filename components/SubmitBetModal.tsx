@@ -301,7 +301,14 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         onClose()
       } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault()
-        handleSubmit(e as React.FormEvent)
+        // Create a synthetic form event for handleSubmit
+        const syntheticEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          currentTarget: e.target,
+          target: e.target
+        } as React.FormEvent
+        handleSubmit(syntheticEvent)
       }
     }
 
