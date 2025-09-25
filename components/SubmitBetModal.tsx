@@ -11,6 +11,18 @@ interface User {
   teamId?: string
 }
 
+interface Team {
+  id: string
+  name: string
+  description?: string
+  color?: string
+  users: Array<{
+    id: string
+    name: string
+    email: string
+  }>
+}
+
 
 interface FanDuelProp {
   id: string
@@ -34,6 +46,7 @@ interface SubmitBetModalProps {
 
 export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser }: SubmitBetModalProps) {
   const [users, setUsers] = useState<User[]>([])
+  const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
   const [formData, setFormData] = useState({
     userId: '',
@@ -81,6 +94,18 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     } catch (error) {
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
+    }
+  }, [])
+
+  const fetchTeams = useCallback(async () => {
+    try {
+      const response = await fetch('/api/teams')
+      const data = await response.json()
+      console.log('Fetched teams:', data) // Debug log
+      setTeams(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error('Error fetching teams:', error)
+      setTeams([]) // Set empty array on error
     }
   }, [])
 
@@ -175,19 +200,24 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     console.log('Form data changed:', formData)
   }, [formData])
 
-  // Get filtered users based on current user's team (team-exclusive betting)
+  // Get filtered users based on selected team
   const getFilteredUsers = () => {
-    console.log('Current user:', currentUser)
-    console.log('All users:', users)
+    console.log('Selected team ID:', formData.teamId)
+    console.log('All teams:', teams)
     
-    if (!currentUser?.teamId) {
-      console.log('No team assigned to current user, showing all users')
+    if (!formData.teamId) {
+      console.log('No team selected, showing all users')
       return users
     }
     
-    const teamUsers = users.filter(user => user.teamId === currentUser.teamId)
-    console.log('Team users:', teamUsers)
-    return teamUsers
+    const selectedTeam = teams.find(team => team.id === formData.teamId)
+    if (!selectedTeam) {
+      console.log('Selected team not found, showing all users')
+      return users
+    }
+    
+    console.log('Selected team users:', selectedTeam.users)
+    return selectedTeam.users
   }
 
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -271,6 +301,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       setWeekValidation(validation)
       
       fetchUsers()
+      fetchTeams()
       fetchFanDuelProps()
       
       // Start live odds updates every 30 seconds
@@ -290,7 +321,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, week, season, fetchUsers, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval]) // Include all dependencies
+  }, [isOpen, week, season, fetchUsers, fetchTeams, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval]) // Include all dependencies
 
   // Keyboard handlers
   useEffect(() => {
@@ -329,6 +360,13 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     console.log('Filtered users:', getFilteredUsers())
 
     // Basic validation
+    if (!formData.teamId) {
+      console.log('Validation failed: No team selected')
+      setError('Please select a team/group')
+      setLoading(false)
+      return
+    }
+    
     if (!formData.userId) {
       console.log('Validation failed: No user selected')
       setError('Please select a team member')
@@ -388,6 +426,21 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     })
   }
 
+  const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const teamId = e.target.value
+    console.log('Team selection changed:', teamId)
+    
+    setFormData(prev => {
+      const newData = { 
+        ...prev, 
+        teamId: teamId,
+        userId: '' // Reset user selection when team changes
+      }
+      console.log('New form data after team selection:', newData)
+      return newData
+    })
+  }
+
   const handlePropSelect = (prop: FanDuelProp) => {
     const currentOdds = liveOdds[prop.id]?.odds || prop.odds
     setFormData(prev => ({
@@ -443,9 +496,11 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           <div className="bg-gray-700 p-3 rounded-lg text-xs text-gray-300">
             <div className="font-semibold mb-2">Debug Info:</div>
             <div>Bet Type: {formData.betType}</div>
+            <div>Team ID: {formData.teamId}</div>
             <div>User ID: {formData.userId}</div>
             <div>Prop: {formData.prop}</div>
             <div>Odds: {formData.odds}</div>
+            <div>Available Teams: {teams.length}</div>
             <div>Available Users: {getFilteredUsers().length}</div>
           </div>
 
@@ -502,7 +557,31 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             </div>
           </div>
 
-          {/* Member Selection (Team-Exclusive) */}
+          {/* Team Selection */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Team/Group *
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <select
+                name="teamId"
+                value={formData.teamId}
+                onChange={handleTeamChange}
+                required
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              >
+                <option value="">Select a team/group</option>
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} ({team.users.length} members)
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Member Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Team Member *
@@ -512,17 +591,10 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               <select
                 name="userId"
                 value={formData.userId}
-                onChange={(e) => {
-                  e.preventDefault()
-                  console.log('Member selection changed:', e.target.value)
-                  setFormData(prev => {
-                    const newData = { ...prev, [e.target.name]: e.target.value }
-                    console.log('New form data after member selection:', newData)
-                    return newData
-                  })
-                }}
+                onChange={handleChange}
                 required
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                disabled={!formData.teamId}
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <option value="">Select a team member</option>
                 {getFilteredUsers().map(user => (
@@ -532,9 +604,14 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 ))}
               </select>
             </div>
-            {!currentUser?.teamId && (
+            {!formData.teamId && (
               <p className="mt-2 text-sm text-yellow-400">
-                ⚠️ You must be assigned to a team to submit bets
+                ⚠️ Please select a team/group first to see available members
+              </p>
+            )}
+            {formData.teamId && getFilteredUsers().length === 0 && (
+              <p className="mt-2 text-sm text-red-400">
+                ⚠️ No members found in the selected team
               </p>
             )}
           </div>
