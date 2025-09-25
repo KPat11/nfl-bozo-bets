@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     console.log('User created successfully:', user)
 
     // Try to add team data if available
-    let userWithTeam = { ...user, team: null }
+    let userWithTeam: any = { ...user, team: null }
     if (teamId && team) {
       userWithTeam = {
         ...user,

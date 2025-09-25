@@ -21,22 +21,30 @@ export async function GET(request: NextRequest) {
     const season = searchParams.get('season')
     const userId = searchParams.get('userId')
 
-    const weeklyBets = await blobStorage.getWeeklyBets(
-      week ? parseInt(week) : undefined,
-      season ? parseInt(season) : undefined
-    )
+    const weeklyBets = await prisma.weeklyBet.findMany({
+      where: {
+        ...(week ? { week: parseInt(week) } : {}),
+        ...(season ? { season: parseInt(season) } : {})
+      },
+      include: {
+        user: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
 
     // Filter by userId if provided
     const filteredBets = userId ? weeklyBets.filter(bet => bet.userId === userId) : weeklyBets
 
-    // Add user and payment data
+    // Add payment data
     const betsWithDetails = await Promise.all(filteredBets.map(async (bet) => {
-      const user = await blobStorage.getUser(bet.userId)
-      const payments = await blobStorage.getPayments(bet.id)
+      const payments = await prisma.payment.findMany({
+        where: { weeklyBetId: bet.id }
+      })
       
       return {
         ...bet,
-        user: user || null,
         payments
       }
     }))
