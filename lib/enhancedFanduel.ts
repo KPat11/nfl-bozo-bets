@@ -241,7 +241,7 @@ export async function findMatchingProp(
     })
     
     // Convert to enhanced format
-    const enhancedDbProps: EnhancedFanDuelProp[] = dbProps.map(p => ({
+    const enhancedDbProps: EnhancedFanDuelProp[] = dbProps.map((p: any) => ({
       ...p,
       gameTime: p.gameTime.toISOString(),
       result: p.result as 'over' | 'under' | 'push' | null | undefined,
@@ -269,11 +269,11 @@ export async function findMatchingProp(
     }
     
     // Strategy 1.5: Team-based props (moneyline, spread, total)
-    const { team, prop } = extractPlayerAndTeam(propText)
-    if (team && prop && ['moneyline', 'spread', 'total'].includes(prop.toLowerCase())) {
+    const { team, prop: propType } = extractPlayerAndTeam(propText)
+    if (team && propType && ['moneyline', 'spread', 'total'].includes(propType.toLowerCase())) {
       for (const propData of allProps) {
         if (propData.team.toLowerCase() === team.toLowerCase() && 
-            propData.prop.toLowerCase() === prop.toLowerCase()) {
+            propData.prop.toLowerCase() === propType.toLowerCase()) {
           return {
             found: true,
             prop: { ...propData, confidence: 1.0, originalText: propText },
@@ -284,12 +284,12 @@ export async function findMatchingProp(
     }
     
     // Strategy 2: Player name + prop type match (without team)
-    if (player && prop) {
+    if (player && propType) {
       for (const propData of allProps) {
         // Extract just the player name without team
         const propPlayerName = propData.player.split(' ').slice(0, -1).join(' ') // Remove last word (team)
         const propDataNormalized = normalizePropText(`${propPlayerName} ${propData.prop}`)
-        const searchNormalized = normalizePropText(`${player} ${prop}`)
+        const searchNormalized = normalizePropText(`${player} ${propType}`)
         
         if (propDataNormalized === searchNormalized) {
           const confidence = 0.9
@@ -302,7 +302,7 @@ export async function findMatchingProp(
     }
 
     // Strategy 3: Simple player name match (for cases where prop is not specified)
-    if (player && !prop) {
+    if (player && !propType) {
       for (const propData of allProps) {
         const propPlayerName = propData.player.split(' ').slice(0, -1).join(' ') // Remove last word (team)
         const propDataNormalized = normalizePropText(propPlayerName)
@@ -319,10 +319,10 @@ export async function findMatchingProp(
     }
     
     // Strategy 3: Fuzzy matching on prop type
-    if (prop) {
+    if (propType) {
       for (const propData of allProps) {
         const propDataNormalized = normalizePropText(propData.prop)
-        const searchNormalized = normalizePropText(prop)
+        const searchNormalized = normalizePropText(propType)
         
         if (propDataNormalized === searchNormalized) {
           const confidence = 0.7
@@ -436,7 +436,7 @@ export async function searchProps(
     })
     
     // Convert to enhanced format
-    const enhancedDbProps: EnhancedFanDuelProp[] = dbProps.map(p => ({
+    const enhancedDbProps: EnhancedFanDuelProp[] = dbProps.map((p: any) => ({
       ...p,
       gameTime: p.gameTime.toISOString(),
       result: p.result as 'over' | 'under' | 'push' | null | undefined,
