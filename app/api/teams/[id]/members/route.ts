@@ -52,7 +52,12 @@ export async function POST(
     })
 
     return NextResponse.json({
+      success: true,
       message: 'Member added to team successfully',
+      team: {
+        id: teamId,
+        name: team.name
+      },
       user: updatedUser
     })
   } catch (error) {

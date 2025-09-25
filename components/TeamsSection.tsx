@@ -134,11 +134,11 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     }
 
     try {
-      const response = await fetch('/api/teams/join', {
+      // Use the members API to add user to team directly
+      const response = await fetch(`/api/teams/${teamId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          teamId,
           userId: currentUser.id
         })
       })
