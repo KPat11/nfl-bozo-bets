@@ -313,15 +313,14 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       
       // Initial live odds fetch
       fetchLiveOdds()
-    }
-    
-    return () => {
-      if (oddsUpdateInterval) {
-        clearInterval(oddsUpdateInterval)
+      
+      // Cleanup function
+      return () => {
+        clearInterval(interval)
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, week, season, fetchUsers, fetchTeams, fetchFanDuelProps, fetchLiveOdds, oddsUpdateInterval]) // Include all dependencies
+  }, [isOpen, week, season]) // Simplified dependencies to prevent infinite loops
 
   // Keyboard handlers
   useEffect(() => {
