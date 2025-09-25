@@ -17,10 +17,10 @@ A web application for tracking weekly NFL prop bets among friends, with payment 
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Prisma ORM
-- **Database**: SQLite (development), PostgreSQL (production)
-- **UI Components**: Lucide React icons, custom components
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Vercel Blob Storage
+- **Database**: Vercel Blob Storage (JSON file-based)
+- **UI Components**: Lucide React icons, Radix UI components
 - **Notifications**: Mock service (ready for Twilio SMS, FCM push notifications)
 
 ## Getting Started
@@ -43,10 +43,10 @@ cd nfl-bozo-bets
 npm install
 ```
 
-3. Set up the database:
+3. Set up environment variables:
 ```bash
-npx prisma generate
-npx prisma db push
+cp .env.example .env.local
+# Edit .env.local with your Vercel Blob credentials
 ```
 
 4. Start the development server:
@@ -58,11 +58,16 @@ npm run dev
 
 ## Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env.local` file in the root directory:
 
 ```env
-# Database
-DATABASE_URL="file:./dev.db"
+# Vercel Blob Storage
+BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
+BLOB_STORE_ID="your-vercel-blob-store-id"
+BLOB_BASE_URL="your-vercel-blob-base-url"
+
+# JWT Secret (for authentication)
+JWT_SECRET="your-jwt-secret-key"
 
 # Cron Jobs (for production)
 CRON_SECRET="your-secret-key"
@@ -99,15 +104,44 @@ FCM_SERVER_KEY="your-fcm-server-key"
 ### Notifications
 - `POST /api/cron/notifications` - Trigger notification sending
 
-## Database Schema
+## Data Storage
 
-The app uses the following main entities:
+The app uses Vercel Blob Storage with JSON files for data persistence. The following data structures are stored:
 
-- **User**: Group members with contact information
-- **WeeklyBet**: Individual prop bets for each week
+- **User**: Group members with contact information and statistics
+- **Team**: Groups/teams with member management and odds settings
+- **WeeklyBet**: Individual prop bets for each week (bozo/favorite picks)
 - **Payment**: Payment tracking for each bet
-- **FanduelProp**: FanDuel prop data for integration
-- **Notification**: Notification history and status
+- **BozoStat**: Historical statistics and leaderboard data
+- **Session**: User authentication sessions
+- **PasswordReset**: Password reset tokens and management
+- **TeamInvitation**: Team invitation links and management
+- **BetManagement**: Admin actions and privilege management
+- **ApiUsage**: API usage tracking for external services
+
+## Architecture
+
+### Vercel Blob Storage
+The app uses Vercel Blob Storage instead of a traditional database for several advantages:
+
+- **Cost-effective**: No database hosting costs, pay only for storage used
+- **Simple**: JSON files are easy to understand and debug
+- **Scalable**: Automatically scales with Vercel's infrastructure
+- **Reliable**: Built-in backup and versioning
+- **Fast**: Direct file access without database queries
+
+### Data Organization
+- Each data type has its own folder in blob storage (`nfl-bozo-bets/users/`, `nfl-bozo-bets/teams/`, etc.)
+- Individual records are stored as separate JSON files
+- UUIDs are used for unique identification
+- All CRUD operations are handled through the `blobStorage.ts` service
+
+### Migration from Prisma
+The app was migrated from Prisma/PostgreSQL to Vercel Blob Storage to:
+- Reduce hosting costs
+- Simplify deployment
+- Remove database dependency
+- Improve performance for read-heavy operations
 
 ## Deployment
 
@@ -128,10 +162,11 @@ The app can be deployed to any platform that supports Next.js:
 
 ## Production Setup
 
-### Database
-- Use PostgreSQL for production
-- Update `DATABASE_URL` in environment variables
-- Run migrations: `npx prisma migrate deploy`
+### Data Storage
+- Uses Vercel Blob Storage for all data persistence
+- No database setup required - data stored as JSON files
+- Set up Vercel Blob Storage and add credentials to environment variables
+- Data is automatically backed up and versioned by Vercel
 
 ### Notifications
 - Set up Twilio account for SMS
