@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { hashPassword, validatePassword } from '@/lib/auth'
 import { z } from 'zod'
 
@@ -23,7 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Find valid reset token
-    const resetRecord = await blobStorage.getPasswordReset(token)
+    const resetRecord = await prisma.passwordReset.findUnique({
+      where: { token }
+    })
 
     if (!resetRecord || resetRecord.used || new Date(resetRecord.expiresAt) < new Date()) {
       return NextResponse.json({
@@ -32,7 +34,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user
-    const user = await blobStorage.getUser(resetRecord.userId)
+    const user = await prisma.user.findUnique({
+      where: { id: resetRecord.userId }
+    })
     if (!user) {
       return NextResponse.json({
         error: 'User not found'
@@ -43,10 +47,16 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(password)
 
     // Update user password
-    await blobStorage.updateUser(resetRecord.userId, { password: hashedPassword })
+    await prisma.user.update({
+      where: { id: resetRecord.userId },
+      data: { password: hashedPassword }
+    })
 
     // Mark reset token as used
-    await blobStorage.updatePasswordReset(token, { used: true })
+    await prisma.passwordReset.update({
+      where: { token },
+      data: { used: true }
+    })
 
     // Delete all existing sessions for security
     // Note: We don't have a deleteAllSessions method, but we can implement it if needed

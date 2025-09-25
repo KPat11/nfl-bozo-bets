@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { blobStorage } from './blobStorage'
+import { prisma } from './db'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 const JWT_EXPIRES_IN = '7d'
@@ -61,7 +61,9 @@ export function verifyToken(token: string): AuthUser | null {
 }
 
 export async function createSession(userId: string): Promise<string> {
-  const user = await blobStorage.getUser(userId)
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  })
   if (!user) {
     throw new Error('User not found')
   }
@@ -72,16 +74,18 @@ export async function createSession(userId: string): Promise<string> {
     name: user.name,
     isAdmin: user.isAdmin, 
     isBiggestBozo: user.isBiggestBozo,
-    teamId: user.teamId
+    teamId: user.teamId || undefined
   })
   
   const expiresAt = new Date()
   expiresAt.setDate(expiresAt.getDate() + 7) // 7 days
 
-  await blobStorage.createSession({
-    userId,
-    token,
-    expiresAt: expiresAt.toISOString()
+  await prisma.session.create({
+    data: {
+      userId,
+      token,
+      expiresAt
+    }
   })
 
   return token
@@ -89,13 +93,17 @@ export async function createSession(userId: string): Promise<string> {
 
 export async function validateSession(token: string): Promise<AuthUser | null> {
   try {
-    const session = await blobStorage.getSession(token)
+    const session = await prisma.session.findUnique({
+      where: { token }
+    })
 
-    if (!session || new Date(session.expiresAt) < new Date()) {
+    if (!session || session.expiresAt < new Date()) {
       return null
     }
 
-    const user = await blobStorage.getUser(session.userId)
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId }
+    })
     if (!user) {
       return null
     }
@@ -114,7 +122,9 @@ export async function validateSession(token: string): Promise<AuthUser | null> {
 }
 
 export async function deleteSession(token: string): Promise<void> {
-  await blobStorage.deleteSession(token)
+  await prisma.session.delete({
+    where: { token }
+  })
 }
 
 export function validatePassword(password: string): { isValid: boolean; errors: string[] } {
@@ -150,27 +160,33 @@ export async function setupAdminUser(): Promise<void> {
   const adminEmail = 'kpatvtech@gmail.com'
   const adminName = 'Ken Patel'
   
-  const users = await blobStorage.getUsers()
-  const existingAdmin = users.find(user => user.email === adminEmail)
+  const existingAdmin = await prisma.user.findUnique({
+    where: { email: adminEmail }
+  })
   
   if (!existingAdmin) {
     const hashedPassword = await hashPassword('Admin123!')
     
-    await blobStorage.createUser({
-      email: adminEmail,
-      name: adminName,
-      password: hashedPassword,
-      phone: '',
-      totalBozos: 0,
-      totalHits: 0,
-      totalFavMisses: 0,
-      isAdmin: true,
-      isBiggestBozo: false
+    await prisma.user.create({
+      data: {
+        email: adminEmail,
+        name: adminName,
+        password: hashedPassword,
+        phone: '',
+        totalBozos: 0,
+        totalHits: 0,
+        totalFavMisses: 0,
+        isAdmin: true,
+        isBiggestBozo: false
+      }
     })
     
     console.log('Admin user created successfully')
   } else if (!existingAdmin.isAdmin) {
-    await blobStorage.updateUser(existingAdmin.id, { isAdmin: true })
+    await prisma.user.update({
+      where: { id: existingAdmin.id },
+      data: { isAdmin: true }
+    })
     
     console.log('Admin privileges granted to existing user')
   }

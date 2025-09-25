@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { verifyPassword, createSession } from '@/lib/auth'
 import { z } from 'zod'
 
@@ -14,8 +14,9 @@ export async function POST(request: NextRequest) {
     const { email, password } = loginSchema.parse(body)
 
     // Find user by email
-    const users = await blobStorage.getUsers()
-    const user = users.find(u => u.email === email)
+    const user = await prisma.user.findUnique({
+      where: { email }
+    })
 
     if (!user) {
       return NextResponse.json({ 

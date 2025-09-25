@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 // import { sendEmail, generatePasswordResetEmail } from '@/lib/emailService'
 import { z } from 'zod'
 import crypto from 'crypto'
@@ -14,8 +14,9 @@ export async function POST(request: NextRequest) {
     const { email } = forgotPasswordSchema.parse(body)
 
     // Find user by email
-    const users = await blobStorage.getUsers()
-    const user = users.find(u => u.email === email)
+    const user = await prisma.user.findUnique({
+      where: { email }
+    })
 
     // Always return success to prevent email enumeration
     if (!user) {
@@ -31,11 +32,13 @@ export async function POST(request: NextRequest) {
     expiresAt.setHours(expiresAt.getHours() + 1) // 1 hour expiry
 
     // Create password reset record
-    await blobStorage.createPasswordReset({
-      userId: user.id,
-      token: resetToken,
-      expiresAt: expiresAt.toISOString(),
-      used: false
+    await prisma.passwordReset.create({
+      data: {
+        userId: user.id,
+        token: resetToken,
+        expiresAt: expiresAt,
+        used: false
+      }
     })
 
     // Generate reset link

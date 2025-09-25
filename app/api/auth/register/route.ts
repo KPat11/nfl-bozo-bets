@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { hashPassword, validatePassword, createSession } from '@/lib/auth'
 // import { sendEmail, generateWelcomeEmail } from '@/lib/emailService'
 import { z } from 'zod'
@@ -26,8 +26,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already exists
-    const users = await blobStorage.getUsers()
-    const existingUser = users.find(u => u.email === email)
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    })
 
     if (existingUser) {
       return NextResponse.json({ 
@@ -39,17 +40,19 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(password)
 
     // Create user
-    const user = await blobStorage.createUser({
-      name,
-      email,
-      password: hashedPassword,
-      phone: '',
-      totalBozos: 0,
-      totalHits: 0,
-      totalFavMisses: 0,
-      isAdmin: false,
-      isBiggestBozo: false,
-      teamId: teamId || undefined
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        phone: '',
+        totalBozos: 0,
+        totalHits: 0,
+        totalFavMisses: 0,
+        isAdmin: false,
+        isBiggestBozo: false,
+        teamId: teamId || null
+      }
     })
 
     // Create session

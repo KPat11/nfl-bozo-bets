@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const bulkUpdateStatsSchema = z.object({
@@ -20,7 +20,9 @@ export async function POST(request: NextRequest) {
     const data = bulkUpdateStatsSchema.parse(body)
 
     // Check if user has management privileges
-    const manager = await blobStorage.getUser(data.managerId)
+    const manager = await prisma.user.findUnique({
+      where: { id: data.managerId }
+    })
 
     if (!manager) {
       return NextResponse.json({ error: 'Manager not found' }, { status: 404 })
@@ -40,8 +42,11 @@ export async function POST(request: NextRequest) {
 
     // Get all target users
     const userIds = data.updates.map(update => update.userId)
-    const allUsers = await blobStorage.getUsers()
-    const targetUsers = allUsers.filter(user => userIds.includes(user.id))
+    const targetUsers = await prisma.user.findMany({
+      where: {
+        id: { in: userIds }
+      }
+    })
 
     // If not admin, filter to only users from the same team
     const allowedUsers = manager.isAdmin 
@@ -65,9 +70,12 @@ export async function POST(request: NextRequest) {
       const newBozos = Math.max(0, (user.totalBozos || 0) + update.bozoChange)
       const newHits = Math.max(0, (user.totalHits || 0) + update.hitChange)
 
-      return blobStorage.updateUser(update.userId, {
-        totalBozos: newBozos,
-        totalHits: newHits
+      return prisma.user.update({
+        where: { id: update.userId },
+        data: {
+          totalBozos: newBozos,
+          totalHits: newHits
+        }
       })
     })
 
@@ -75,13 +83,14 @@ export async function POST(request: NextRequest) {
     const successfulUpdates = updatedUsers.filter(user => user !== null)
 
     // Create bulk management record for audit trail
-    await blobStorage.createBetManagement({
-      weeklyBetId: 'bulk-stats-update', // Special identifier for bulk stats updates
-      managerId: data.managerId,
-      week: data.week,
-      season: data.season,
-      action: 'OVERRIDE_STATUS',
-      reason: `Bulk stats update: ${filteredUpdates.length} users updated. Changes: ${filteredUpdates.map(u => `${u.bozoChange > 0 ? '+' : ''}${u.bozoChange}B/${u.hitChange > 0 ? '+' : ''}${u.hitChange}H`).join(', ')}`
+    await prisma.betManagement.create({
+      data: {
+        managerId: data.managerId,
+        week: data.week,
+        season: data.season,
+        action: 'OVERRIDE_STATUS',
+        betId: 'bulk-stats-update' // Special identifier for bulk stats updates
+      }
     })
 
     return NextResponse.json({ 

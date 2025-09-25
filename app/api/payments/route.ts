@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const createPaymentSchema = z.object({
@@ -16,38 +16,26 @@ export async function GET(request: NextRequest) {
     const weeklyBetId = searchParams.get('weeklyBetId')
     const status = searchParams.get('status')
 
-    let payments = await blobStorage.getPayments()
-
-    // Filter payments based on query parameters
-    if (userId) {
-      payments = payments.filter(payment => payment.userId === userId)
-    }
-    if (weeklyBetId) {
-      payments = payments.filter(payment => payment.weeklyBetId === weeklyBetId)
-    }
-    if (status) {
-      payments = payments.filter(payment => payment.status === status)
-    }
-
-    // Sort by creation date (newest first)
-    payments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-
-    // Add user and weekly bet data
-    const paymentsWithDetails = await Promise.all(payments.map(async (payment) => {
-      const user = await blobStorage.getUser(payment.userId)
-      const weeklyBet = await blobStorage.getWeeklyBet(payment.weeklyBetId)
-      
-      return {
-        ...payment,
-        user: user || null,
-        weeklyBet: weeklyBet ? {
-          ...weeklyBet,
-          user: user || null
-        } : null
+    const payments = await prisma.payment.findMany({
+      where: {
+        ...(userId ? { userId } : {}),
+        ...(weeklyBetId ? { weeklyBetId } : {}),
+        ...(status ? { status: status as 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' } : {})
+      },
+      include: {
+        user: true,
+        weeklyBet: {
+          include: {
+            user: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
-    }))
+    })
 
-    return NextResponse.json(paymentsWithDetails)
+    return NextResponse.json(payments)
   } catch (error) {
     console.error('Error fetching payments:', error)
     return NextResponse.json({ error: 'Failed to fetch payments' }, { status: 500 })
@@ -59,26 +47,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { userId, weeklyBetId, amount, method } = createPaymentSchema.parse(body)
 
-    const payment = await blobStorage.createPayment({
-      userId,
-      weeklyBetId,
-      amount,
-      method: method || undefined,
-      status: 'PENDING'
+    const payment = await prisma.payment.create({
+      data: {
+        userId,
+        weeklyBetId,
+        amount,
+        method: method || null,
+        status: 'PENDING'
+      },
+      include: {
+        user: true,
+        weeklyBet: {
+          include: {
+            user: true
+          }
+        }
+      }
     })
 
-    // Get user and weekly bet data
-    const user = await blobStorage.getUser(userId)
-    const weeklyBet = await blobStorage.getWeeklyBet(weeklyBetId)
-
-    return NextResponse.json({
-      ...payment,
-      user: user || null,
-      weeklyBet: weeklyBet ? {
-        ...weeklyBet,
-        user: user || null
-      } : null
-    }, { status: 201 })
+    return NextResponse.json(payment, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })

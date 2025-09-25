@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const updateTeamSchema = z.object({
@@ -19,30 +19,27 @@ export async function PUT(
     const body = await request.json()
     const { name, description, color, lowestOdds, highestOdds } = updateTeamSchema.parse(body)
 
-    const updatedTeam = await blobStorage.updateTeam(id, {
-      name,
-      description,
-      color: color || '#3b82f6',
-      lowestOdds: lowestOdds !== undefined ? lowestOdds : -120,
-      highestOdds: highestOdds !== undefined ? highestOdds : 130
+    const updatedTeam = await prisma.team.update({
+      where: { id },
+      data: {
+        name,
+        description: description || null,
+        color: color || '#3b82f6',
+        lowestOdds: lowestOdds !== undefined ? lowestOdds : -120,
+        highestOdds: highestOdds !== undefined ? highestOdds : 130
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
     })
 
-    if (!updatedTeam) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    }
-
-    // Get team with users
-    const users = await blobStorage.getUsers()
-    const teamUsers = users.filter(user => user.teamId === id).map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email
-    }))
-
-    return NextResponse.json({
-      ...updatedTeam,
-      users: teamUsers
-    })
+    return NextResponse.json(updatedTeam)
   } catch (error) {
     console.error('Error updating team:', error)
     
@@ -62,19 +59,15 @@ export async function DELETE(
     const { id } = await params
 
     // Remove team assignment from all users
-    const users = await blobStorage.getUsers()
-    const teamUsers = users.filter(user => user.teamId === id)
-    
-    for (const user of teamUsers) {
-      await blobStorage.updateUser(user.id, { teamId: undefined })
-    }
+    await prisma.user.updateMany({
+      where: { teamId: id },
+      data: { teamId: null }
+    })
 
     // Delete the team
-    const deleted = await blobStorage.deleteTeam(id)
-    
-    if (!deleted) {
-      return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-    }
+    const deleted = await prisma.team.delete({
+      where: { id }
+    })
 
     return NextResponse.json({ message: 'Team deleted successfully' })
   } catch (error) {

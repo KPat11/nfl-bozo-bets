@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { blobStorage } from '@/lib/blobStorage'
+import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const markPaymentSchema = z.object({
@@ -15,39 +15,43 @@ export async function POST(request: NextRequest) {
     const { weeklyBetId, status, method, amount } = markPaymentSchema.parse(body)
 
     // Check if payment already exists
-    const payments = await blobStorage.getPayments(weeklyBetId)
-    const existingPayment = payments.find(p => p.weeklyBetId === weeklyBetId)
+    const existingPayment = await prisma.payment.findFirst({
+      where: { weeklyBetId }
+    })
 
     if (existingPayment) {
       // Update existing payment
-      const updatedPayment = await blobStorage.updatePayment(existingPayment.id, {
-        status: status === 'PAID' ? 'PAID' : 'PENDING',
-        method: method || existingPayment.method,
-        amount: amount || existingPayment.amount,
-        paidAt: status === 'PAID' ? new Date().toISOString() : undefined
+      const updatedPayment = await prisma.payment.update({
+        where: { id: existingPayment.id },
+        data: {
+          status: status === 'PAID' ? 'PAID' : 'PENDING',
+          method: method || existingPayment.method,
+          amount: amount || existingPayment.amount,
+          paidAt: status === 'PAID' ? new Date() : null
+        }
       })
-
-      if (!updatedPayment) {
-        return NextResponse.json({ error: 'Failed to update payment' }, { status: 500 })
-      }
 
       return NextResponse.json(updatedPayment)
     } else {
       // Get the bet to find the userId
-      const bet = await blobStorage.getWeeklyBet(weeklyBetId)
+      const bet = await prisma.weeklyBet.findUnique({
+        where: { id: weeklyBetId }
+      })
 
       if (!bet) {
         return NextResponse.json({ error: 'Bet not found' }, { status: 404 })
       }
 
       // Create new payment
-      const newPayment = await blobStorage.createPayment({
-        weeklyBetId,
-        userId: bet.userId,
-        amount: amount || 10, // Default $10 bet
-        status: status === 'PAID' ? 'PAID' : 'PENDING',
-        method: method || 'Cash',
-        paidAt: status === 'PAID' ? new Date().toISOString() : undefined
+      const newPayment = await prisma.payment.create({
+        data: {
+          weeklyBetId,
+          userId: bet.userId,
+          amount: amount || 10, // Default $10 bet
+          status: status === 'PAID' ? 'PAID' : 'PENDING',
+          method: method || 'Cash',
+          paidAt: status === 'PAID' ? new Date() : null
+        }
       })
 
       return NextResponse.json(newPayment)
