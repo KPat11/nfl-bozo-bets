@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log('Creating user in blob storage...')
+    console.log('Creating user in database...')
     const userData = {
       email,
       name,
