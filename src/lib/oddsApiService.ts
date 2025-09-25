@@ -274,20 +274,23 @@ class OddsApiService {
         SELECT * FROM api_usage 
         WHERE month = ${currentMonth}
         LIMIT 1
-      ` as any[]
+      ` as Array<{ month: string; requestsUsed: number; lastReset: Date }>
 
       if (usage && usage.length > 0) {
         this.currentUsage = {
           month: usage[0].month,
-          requestsUsed: usage[0].requests_used,
-          lastReset: new Date(usage[0].last_reset)
+          requestsUsed: usage[0].requestsUsed,
+          lastReset: new Date(usage[0].lastReset)
         }
       } else {
         // Create new usage record for this month
-        await prisma.$queryRaw`
-          INSERT INTO api_usage (month, requests_used, last_reset, created_at, updated_at)
-          VALUES (${currentMonth}, 0, NOW(), NOW(), NOW())
-        `
+        await prisma.apiUsage.create({
+          data: {
+            month: currentMonth,
+            requestsUsed: 0,
+            lastReset: new Date()
+          }
+        })
         
         this.currentUsage = {
           month: currentMonth,

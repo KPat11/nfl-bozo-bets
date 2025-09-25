@@ -58,14 +58,15 @@ async function makeRequest(endpoint, options = {}) {
   }
 }
 
-// Test data
+// Generate unique test data to avoid conflicts
+const timestamp = Date.now()
 const testData = {
   user: {
-    name: 'Test User',
-    email: 'test@example.com'
+    name: `Test User ${timestamp}`,
+    email: `test${timestamp}@example.com`
   },
   team: {
-    name: 'Test Team',
+    name: `Test Team ${timestamp}`,
     description: 'Test team description',
     color: '#ff0000'
   },
@@ -73,7 +74,7 @@ const testData = {
     userId: '',
     week: 1,
     season: 2025,
-    prop: 'Test prop bet',
+    prop: `Test prop bet ${timestamp}`,
     odds: 150,
     betType: 'BOZO'
   }
@@ -117,6 +118,7 @@ class APITests {
     assert(createUserResponse && createUserResponse.ok, 'User creation successful');
     if (userData && userData.id) {
       testData.bet.userId = userData.id;
+      testData.createdUserId = userData.id; // Store for cleanup
     }
     
     // Test 2: Get users
@@ -131,6 +133,9 @@ class APITests {
     });
     
     assert(createTeamResponse && createTeamResponse.ok, 'Team creation successful');
+    if (teamData && teamData.id) {
+      testData.createdTeamId = teamData.id; // Store for cleanup
+    }
     
     // Test 4: Get teams
     const { response: getTeamsResponse, data: teamsData } = await makeRequest('/teams');
@@ -264,6 +269,23 @@ class PerformanceTests {
   }
 }
 
+// Cleanup function to remove test data
+async function cleanupTestData() {
+  try {
+    // Clean up created test data
+    if (testData.createdUserId) {
+      await makeRequest(`/users/${testData.createdUserId}`, { method: 'DELETE' });
+      log('Cleaned up test user');
+    }
+    if (testData.createdTeamId) {
+      await makeRequest(`/teams/${testData.createdTeamId}`, { method: 'DELETE' });
+      log('Cleaned up test team');
+    }
+  } catch (error) {
+    log(`Cleanup warning: ${error.message}`, 'warn');
+  }
+}
+
 // Main test runner
 async function runTests() {
   log('Starting NFL Bozo Bets Test Suite...');
@@ -294,6 +316,9 @@ async function runTests() {
   
   const successRate = ((testResults.passed / testResults.total) * 100).toFixed(2);
   log(`\nSuccess Rate: ${successRate}%`);
+  
+  // Cleanup test data
+  await cleanupTestData();
   
   if (testResults.failed > 0) {
     process.exit(1);

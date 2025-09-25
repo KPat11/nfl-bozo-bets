@@ -58,29 +58,36 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has a bet for this week/season/betType
-    const existingBet = await prisma.$queryRaw`
-      SELECT * FROM weekly_bets 
-      WHERE "userId" = ${userId} 
-      AND week = ${week} 
-      AND season = ${season} 
-      AND "betType" = ${betType}
-      LIMIT 1
-    `
+    const existingBet = await prisma.weeklyBet.findFirst({
+      where: {
+        userId,
+        week,
+        season,
+        betType: betType as 'BOZO' | 'FAVORITE'
+      }
+    })
 
-    if (Array.isArray(existingBet) && existingBet.length > 0) {
+    if (existingBet) {
       return NextResponse.json({ error: `User already has a ${betType.toLowerCase()} bet for this week` }, { status: 409 })
     }
 
-    const weeklyBet = await prisma.$queryRaw`
-      INSERT INTO weekly_bets (id, "userId", week, season, prop, odds, "fanduelId", status, "betType", "createdAt", "updatedAt")
-      VALUES (gen_random_uuid(), ${userId}, ${week}, ${season}, ${prop}, ${odds || null}, ${fanduelId || null}, 'PENDING', ${betType}, NOW(), NOW())
-      RETURNING *
-    `
+    const weeklyBet = await prisma.weeklyBet.create({
+      data: {
+        userId,
+        week,
+        season,
+        prop,
+        odds: odds || null,
+        fanduelId: fanduelId || null,
+        status: 'PENDING',
+        betType: betType as 'BOZO' | 'FAVORITE'
+      }
+    })
 
     // Send fast update via UDP
     try {
       await sendBetStatusUpdate({
-        betId: Array.isArray(weeklyBet) && weeklyBet.length > 0 ? weeklyBet[0].id : 'unknown',
+        betId: weeklyBet.id,
         userId,
         status: 'PENDING',
         timestamp: Date.now()
