@@ -89,7 +89,8 @@ export async function POST(request: NextRequest) {
         week: data.week,
         season: data.season,
         action: 'OVERRIDE_STATUS',
-        betId: 'bulk-stats-update' // Special identifier for bulk stats updates
+        weeklyBetId: 'bulk-stats-update', // Special identifier for bulk stats updates
+        reason: `Bulk stats update: ${filteredUpdates.length} users updated`
       }
     })
 
