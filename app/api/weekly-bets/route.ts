@@ -64,7 +64,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has a bet for this week/season/betType
-<<<<<<< HEAD:src/app/api/weekly-bets/route.ts
     const existingBet = await prisma.weeklyBet.findFirst({
       where: {
         userId,
@@ -73,18 +72,11 @@ export async function POST(request: NextRequest) {
         betType: betType as 'BOZO' | 'FAVORITE'
       }
     })
-=======
-    const existingBets = await blobStorage.getWeeklyBets(week, season)
-    const existingBet = existingBets.find(bet => 
-      bet.userId === userId && bet.betType === betType
-    )
->>>>>>> ac649c0fd4bea057d085bbf12db2c97d66214ef3:app/api/weekly-bets/route.ts
 
     if (existingBet) {
       return NextResponse.json({ error: `User already has a ${betType.toLowerCase()} bet for this week` }, { status: 409 })
     }
 
-<<<<<<< HEAD:src/app/api/weekly-bets/route.ts
     const weeklyBet = await prisma.weeklyBet.create({
       data: {
         userId,
@@ -96,18 +88,6 @@ export async function POST(request: NextRequest) {
         status: 'PENDING',
         betType: betType as 'BOZO' | 'FAVORITE'
       }
-=======
-    const weeklyBet = await blobStorage.createWeeklyBet({
-      userId,
-      week,
-      season,
-      prop,
-      odds: odds || undefined,
-      fanduelId: fanduelId || undefined,
-      status: 'PENDING',
-      betType: betType as 'BOZO' | 'FAVORITE',
-      paid: false
->>>>>>> ac649c0fd4bea057d085bbf12db2c97d66214ef3:app/api/weekly-bets/route.ts
     })
 
     // Send fast update via UDP
