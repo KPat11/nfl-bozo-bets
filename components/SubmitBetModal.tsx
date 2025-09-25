@@ -454,8 +454,18 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-gray-800 rounded-xl p-4 sm:p-6 w-full max-w-2xl mx-4 my-8 border border-gray-700 shadow-2xl">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-75 flex items-start justify-center z-[9999] p-4 overflow-y-auto"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose()
+        }
+      }}
+    >
+      <div 
+        className="bg-gray-800 rounded-xl p-4 sm:p-6 w-full max-w-2xl mx-4 my-8 border border-gray-700 shadow-2xl relative z-[10000]"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-2xl font-bold text-white">Submit Week {week} Bet</h2>
           <button
@@ -514,6 +524,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   console.log('BOZO button clicked, current betType:', formData.betType)
                   setFormData(prev => {
                     const newData = { ...prev, betType: 'BOZO' as const }
@@ -521,7 +532,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                     return newData
                   })
                 }}
-                className={`p-3 rounded-lg border-2 transition-colors ${
+                className={`p-3 rounded-lg border-2 transition-colors relative z-[10001] ${
                   formData.betType === 'BOZO'
                     ? 'border-red-500 bg-red-900/20 text-red-200'
                     : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
@@ -536,6 +547,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   console.log('FAVORITE button clicked, current betType:', formData.betType)
                   setFormData(prev => {
                     const newData = { ...prev, betType: 'FAVORITE' as const }
@@ -543,7 +555,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                     return newData
                   })
                 }}
-                className={`p-3 rounded-lg border-2 transition-colors ${
+                className={`p-3 rounded-lg border-2 transition-colors relative z-[10001] ${
                   formData.betType === 'FAVORITE'
                     ? 'border-green-500 bg-green-900/20 text-green-200'
                     : 'border-gray-600 bg-gray-700 text-gray-300 hover:border-gray-500'
@@ -562,14 +574,14 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Team/Group *
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="relative z-[10001]">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-[10002]" />
               <select
                 name="teamId"
                 value={formData.teamId}
                 onChange={handleTeamChange}
                 required
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors relative z-[10002]"
               >
                 <option value="">Select a team/group</option>
                 {teams.map(team => (
@@ -586,15 +598,15 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Team Member *
             </label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <div className="relative z-[10001]">
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-[10002]" />
               <select
                 name="userId"
                 value={formData.userId}
                 onChange={handleChange}
                 required
                 disabled={!formData.teamId}
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative z-[10002]"
               >
                 <option value="">Select a team member</option>
                 {getFilteredUsers().map(user => (
@@ -621,16 +633,16 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               Prop Bet *
             </label>
             <div className="space-y-3">
-              <div className="relative">
-                <Target className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <div className="relative">
+              <div className="relative z-[10001]">
+                <Target className="absolute left-3 top-3 h-5 w-5 text-gray-400 z-[10002]" />
+                <div className="relative z-[10001]">
                   <textarea
                     name="prop"
                     value={formData.prop}
                     onChange={handlePropTextChange}
                     required
                     rows={3}
-                    className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none"
+                    className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors resize-none relative z-[10002]"
                     placeholder="Describe your prop bet (e.g., Josh Allen over 250.5 passing yards, Eagles ML, etc.)"
                   />
                   {isSearching && (
@@ -764,6 +776,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = Math.max(currentOdds - 0.5, -50)
                   console.log('Decreasing odds from', currentOdds, 'to', newOdds)
@@ -773,12 +786,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                     return newData
                   })
                 }}
-                className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
+                className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors relative z-[10001]"
               >
                 <span className="text-lg">−</span>
               </button>
               
-              <div className="flex-1 relative">
+              <div className="flex-1 relative z-[10001]">
                 <input
                   type="number"
                   name="odds"
@@ -787,7 +800,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   step="0.5"
                   min="-50"
                   max="50"
-                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center ${
+                  className={`w-full px-4 py-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center relative z-[10002] ${
                     formData.fanduelId ? 'border-green-500 bg-green-900/20' : 'border-gray-600'
                   }`}
                   placeholder="0.0"
@@ -808,6 +821,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 type="button"
                 onClick={(e) => {
                   e.preventDefault()
+                  e.stopPropagation()
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = Math.min(currentOdds + 0.5, 50)
                   console.log('Increasing odds from', currentOdds, 'to', newOdds)
@@ -817,7 +831,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                     return newData
                   })
                 }}
-                className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors"
+                className="flex items-center justify-center w-10 h-10 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded-lg text-white transition-colors relative z-[10001]"
               >
                 <span className="text-lg">+</span>
               </button>
