@@ -166,31 +166,43 @@ class APITests {
 
 class DatabaseTests {
   static async run() {
-    log('Running Database Tests...');
+    log('Running Blob Storage Tests...');
     
-    // Test 1: Check if users table has required fields
+    // Test 1: Check if users endpoint works with blob storage
     const { response: usersResponse, data: usersData } = await makeRequest('/users');
+    assert(usersResponse && usersResponse.ok, 'Users endpoint is accessible');
+    
     if (usersData && usersData.length > 0) {
       const user = usersData[0];
       assert(user.hasOwnProperty('id'), 'User has id field');
       assert(user.hasOwnProperty('name'), 'User has name field');
       assert(user.hasOwnProperty('email'), 'User has email field');
+      assert(user.hasOwnProperty('totalBozos'), 'User has totalBozos field');
+      assert(user.hasOwnProperty('totalHits'), 'User has totalHits field');
+      assert(user.hasOwnProperty('isAdmin'), 'User has isAdmin field');
       assert(user.hasOwnProperty('createdAt'), 'User has createdAt field');
       assert(user.hasOwnProperty('updatedAt'), 'User has updatedAt field');
     }
     
-    // Test 2: Check if teams table has required fields
+    // Test 2: Check if teams endpoint works with blob storage
     const { response: teamsResponse, data: teamsData } = await makeRequest('/teams');
+    assert(teamsResponse && teamsResponse.ok, 'Teams endpoint is accessible');
+    
     if (teamsData && teamsData.length > 0) {
       const team = teamsData[0];
       assert(team.hasOwnProperty('id'), 'Team has id field');
       assert(team.hasOwnProperty('name'), 'Team has name field');
+      assert(team.hasOwnProperty('isLocked'), 'Team has isLocked field');
+      assert(team.hasOwnProperty('lowestOdds'), 'Team has lowestOdds field');
+      assert(team.hasOwnProperty('highestOdds'), 'Team has highestOdds field');
       assert(team.hasOwnProperty('createdAt'), 'Team has createdAt field');
       assert(team.hasOwnProperty('updatedAt'), 'Team has updatedAt field');
     }
     
-    // Test 3: Check if weekly bets table has required fields
+    // Test 3: Check if weekly bets endpoint works with blob storage
     const { response: betsResponse, data: betsData } = await makeRequest('/weekly-bets?week=1&season=2025');
+    assert(betsResponse && betsResponse.ok, 'Weekly bets endpoint is accessible');
+    
     if (betsData && betsData.length > 0) {
       const bet = betsData[0];
       assert(bet.hasOwnProperty('id'), 'Weekly bet has id field');
@@ -201,6 +213,83 @@ class DatabaseTests {
       assert(bet.hasOwnProperty('betType'), 'Weekly bet has betType field');
       assert(bet.hasOwnProperty('status'), 'Weekly bet has status field');
     }
+    
+    // Test 4: Test blob storage CRUD operations
+    await this.testBlobStorageCRUD();
+  }
+  
+  static async testBlobStorageCRUD() {
+    log('Testing Blob Storage CRUD operations...');
+    
+    // Test user creation
+    const testUser = {
+      name: 'Test User',
+      email: 'test@example.com',
+      password: 'testpassword123'
+    };
+    
+    const { response: createUserResponse, data: createdUser } = await makeRequest('/users', {
+      method: 'POST',
+      body: JSON.stringify(testUser)
+    });
+    
+    assert(createUserResponse && createUserResponse.ok, 'User creation works with blob storage');
+    assert(createdUser && createdUser.id, 'Created user has ID');
+    
+    // Test team creation
+    const testTeam = {
+      name: 'Test Team',
+      description: 'Test team description',
+      color: '#ff0000',
+      lowestOdds: -120,
+      highestOdds: 130
+    };
+    
+    const { response: createTeamResponse, data: createdTeam } = await makeRequest('/teams', {
+      method: 'POST',
+      body: JSON.stringify(testTeam)
+    });
+    
+    assert(createTeamResponse && createTeamResponse.ok, 'Team creation works with blob storage');
+    assert(createdTeam && createdTeam.id, 'Created team has ID');
+    
+    // Test bet creation
+    const testBet = {
+      userId: createdUser.id,
+      week: 1,
+      season: 2025,
+      prop: 'Test prop bet',
+      odds: 150,
+      betType: 'BOZO'
+    };
+    
+    const { response: createBetResponse, data: createdBet } = await makeRequest('/weekly-bets', {
+      method: 'POST',
+      body: JSON.stringify(testBet)
+    });
+    
+    assert(createBetResponse && createBetResponse.ok, 'Bet creation works with blob storage');
+    assert(createdBet && createdBet.id, 'Created bet has ID');
+    
+    // Test data retrieval
+    const { response: usersResponse, data: usersData } = await makeRequest('/users');
+    const testUserExists = usersData.find(user => user.id === createdUser.id);
+    assert(testUserExists, 'Created user can be retrieved from blob storage');
+    
+    const { response: teamsResponse, data: teamsData } = await makeRequest('/teams');
+    const testTeamExists = teamsData.find(team => team.id === createdTeam.id);
+    assert(testTeamExists, 'Created team can be retrieved from blob storage');
+    
+    const { response: betsResponse, data: betsData } = await makeRequest('/weekly-bets');
+    const testBetExists = betsData.find(bet => bet.id === createdBet.id);
+    assert(testBetExists, 'Created bet can be retrieved from blob storage');
+    
+    // Cleanup - delete test data
+    await makeRequest(`/users/${createdUser.id}`, { method: 'DELETE' });
+    await makeRequest(`/teams/${createdTeam.id}`, { method: 'DELETE' });
+    await makeRequest(`/weekly-bets/${createdBet.id}`, { method: 'DELETE' });
+    
+    log('Blob storage CRUD operations completed successfully');
   }
 }
 
