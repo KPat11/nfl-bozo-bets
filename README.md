@@ -18,8 +18,8 @@ A web application for tracking weekly NFL prop bets among friends, with payment 
 ## Tech Stack
 
 - **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Vercel Blob Storage
-- **Database**: Vercel Blob Storage (JSON file-based)
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: PostgreSQL (Neon)
 - **UI Components**: Lucide React icons, Radix UI components
 - **Notifications**: Mock service (ready for Twilio SMS, FCM push notifications)
 
@@ -61,10 +61,8 @@ npm run dev
 Create a `.env.local` file in the root directory:
 
 ```env
-# Vercel Blob Storage
-BLOB_READ_WRITE_TOKEN="your-vercel-blob-token"
-BLOB_STORE_ID="your-vercel-blob-store-id"
-BLOB_BASE_URL="your-vercel-blob-base-url"
+# Database
+DATABASE_URL="postgresql://username:password@host:port/database"
 
 # JWT Secret (for authentication)
 JWT_SECRET="your-jwt-secret-key"
@@ -106,7 +104,7 @@ FCM_SERVER_KEY="your-fcm-server-key"
 
 ## Data Storage
 
-The app uses Vercel Blob Storage with JSON files for data persistence. The following data structures are stored:
+The app uses PostgreSQL with Prisma ORM for data persistence. The following data structures are stored:
 
 - **User**: Group members with contact information and statistics
 - **Team**: Groups/teams with member management and odds settings
@@ -121,27 +119,26 @@ The app uses Vercel Blob Storage with JSON files for data persistence. The follo
 
 ## Architecture
 
-### Vercel Blob Storage
-The app uses Vercel Blob Storage instead of a traditional database for several advantages:
+### PostgreSQL Database
+The app uses PostgreSQL with Prisma ORM for data persistence:
 
-- **Cost-effective**: No database hosting costs, pay only for storage used
-- **Simple**: JSON files are easy to understand and debug
-- **Scalable**: Automatically scales with Vercel's infrastructure
-- **Reliable**: Built-in backup and versioning
-- **Fast**: Direct file access without database queries
+- **Reliability**: Robust, ACID-compliant database
+- **Performance**: Optimized for complex queries and relationships
+- **Scalability**: Handles large datasets efficiently
+- **Type Safety**: Prisma provides type-safe database access
+- **Migrations**: Easy schema management and versioning
 
 ### Data Organization
-- Each data type has its own folder in blob storage (`nfl-bozo-bets/users/`, `nfl-bozo-bets/teams/`, etc.)
-- Individual records are stored as separate JSON files
-- UUIDs are used for unique identification
-- All CRUD operations are handled through the `blobStorage.ts` service
+- All data is stored in PostgreSQL tables with proper relationships
+- Prisma ORM provides type-safe database access
+- Database schema is defined in `prisma/schema.prisma`
+- Migrations are handled through Prisma CLI
 
-### Migration from Prisma
-The app was migrated from Prisma/PostgreSQL to Vercel Blob Storage to:
-- Reduce hosting costs
-- Simplify deployment
-- Remove database dependency
-- Improve performance for read-heavy operations
+### Database Setup
+1. Set up a PostgreSQL database (recommended: Neon)
+2. Add `DATABASE_URL` to your environment variables
+3. Run `npx prisma db push` to create tables
+4. Run `npx prisma generate` to generate Prisma client
 
 ## Deployment
 
@@ -163,10 +160,10 @@ The app can be deployed to any platform that supports Next.js:
 ## Production Setup
 
 ### Data Storage
-- Uses Vercel Blob Storage for all data persistence
-- No database setup required - data stored as JSON files
-- Set up Vercel Blob Storage and add credentials to environment variables
-- Data is automatically backed up and versioned by Vercel
+- Uses PostgreSQL database with Prisma ORM for all data persistence
+- Set up a PostgreSQL database (recommended: Neon)
+- Add `DATABASE_URL` to your environment variables
+- Run database migrations with `npx prisma db push`
 
 ### Notifications
 - Set up Twilio account for SMS

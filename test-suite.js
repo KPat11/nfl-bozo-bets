@@ -171,9 +171,9 @@ class APITests {
 
 class DatabaseTests {
   static async run() {
-    log('Running Blob Storage Tests...');
+    log('Running Database Tests...');
     
-    // Test 1: Check if users endpoint works with blob storage
+    // Test 1: Check if users endpoint works with Prisma/PostgreSQL
     const { response: usersResponse, data: usersData } = await makeRequest('/users');
     assert(usersResponse && usersResponse.ok, 'Users endpoint is accessible');
     
@@ -189,7 +189,7 @@ class DatabaseTests {
       assert(user.hasOwnProperty('updatedAt'), 'User has updatedAt field');
     }
     
-    // Test 2: Check if teams endpoint works with blob storage
+    // Test 2: Check if teams endpoint works with Prisma/PostgreSQL
     const { response: teamsResponse, data: teamsData } = await makeRequest('/teams');
     assert(teamsResponse && teamsResponse.ok, 'Teams endpoint is accessible');
     
@@ -204,7 +204,7 @@ class DatabaseTests {
       assert(team.hasOwnProperty('updatedAt'), 'Team has updatedAt field');
     }
     
-    // Test 3: Check if weekly bets endpoint works with blob storage
+    // Test 3: Check if weekly bets endpoint works with Prisma/PostgreSQL
     const { response: betsResponse, data: betsData } = await makeRequest('/weekly-bets?week=1&season=2025');
     assert(betsResponse && betsResponse.ok, 'Weekly bets endpoint is accessible');
     
@@ -219,12 +219,12 @@ class DatabaseTests {
       assert(bet.hasOwnProperty('status'), 'Weekly bet has status field');
     }
     
-    // Test 4: Test blob storage CRUD operations
-    await this.testBlobStorageCRUD();
+    // Test 4: Test database CRUD operations
+    await this.testDatabaseCRUD();
   }
   
-  static async testBlobStorageCRUD() {
-    log('Testing Blob Storage CRUD operations...');
+  static async testDatabaseCRUD() {
+    log('Testing Database CRUD operations...');
     
     // Test user creation
     const testUser = {
@@ -238,7 +238,7 @@ class DatabaseTests {
       body: JSON.stringify(testUser)
     });
     
-    assert(createUserResponse && createUserResponse.ok, 'User creation works with blob storage');
+    assert(createUserResponse && createUserResponse.ok, 'User creation works with Prisma/PostgreSQL');
     assert(createdUser && createdUser.id, 'Created user has ID');
     
     // Test team creation
@@ -255,7 +255,7 @@ class DatabaseTests {
       body: JSON.stringify(testTeam)
     });
     
-    assert(createTeamResponse && createTeamResponse.ok, 'Team creation works with blob storage');
+    assert(createTeamResponse && createTeamResponse.ok, 'Team creation works with Prisma/PostgreSQL');
     assert(createdTeam && createdTeam.id, 'Created team has ID');
     
     // Test bet creation
@@ -273,28 +273,28 @@ class DatabaseTests {
       body: JSON.stringify(testBet)
     });
     
-    assert(createBetResponse && createBetResponse.ok, 'Bet creation works with blob storage');
+    assert(createBetResponse && createBetResponse.ok, 'Bet creation works with Prisma/PostgreSQL');
     assert(createdBet && createdBet.id, 'Created bet has ID');
     
     // Test data retrieval
     const { response: usersResponse, data: usersData } = await makeRequest('/users');
     const testUserExists = usersData.find(user => user.id === createdUser.id);
-    assert(testUserExists, 'Created user can be retrieved from blob storage');
+    assert(testUserExists, 'Created user can be retrieved from Prisma/PostgreSQL');
     
     const { response: teamsResponse, data: teamsData } = await makeRequest('/teams');
     const testTeamExists = teamsData.find(team => team.id === createdTeam.id);
-    assert(testTeamExists, 'Created team can be retrieved from blob storage');
+    assert(testTeamExists, 'Created team can be retrieved from Prisma/PostgreSQL');
     
     const { response: betsResponse, data: betsData } = await makeRequest('/weekly-bets');
     const testBetExists = betsData.find(bet => bet.id === createdBet.id);
-    assert(testBetExists, 'Created bet can be retrieved from blob storage');
+    assert(testBetExists, 'Created bet can be retrieved from Prisma/PostgreSQL');
     
     // Cleanup - delete test data
     await makeRequest(`/users/${createdUser.id}`, { method: 'DELETE' });
     await makeRequest(`/teams/${createdTeam.id}`, { method: 'DELETE' });
     await makeRequest(`/weekly-bets/${createdBet.id}`, { method: 'DELETE' });
     
-    log('Blob storage CRUD operations completed successfully');
+    log('Database CRUD operations completed successfully');
   }
 }
 
