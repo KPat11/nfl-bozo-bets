@@ -22,9 +22,10 @@ interface JoinTeamModalProps {
   isOpen: boolean
   onClose: () => void
   onJoinTeam: (teamId: string) => Promise<void>
+  authToken?: string | null
 }
 
-export default function JoinTeamModal({ isOpen, onClose, onJoinTeam }: JoinTeamModalProps) {
+export default function JoinTeamModal({ isOpen, onClose, onJoinTeam, authToken }: JoinTeamModalProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [filteredTeams, setFilteredTeams] = useState<Team[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -37,15 +38,14 @@ export default function JoinTeamModal({ isOpen, onClose, onJoinTeam }: JoinTeamM
       setLoading(true)
       setError('')
       
-      const token = localStorage.getItem('authToken')
-      if (!token) {
+      if (!authToken) {
         setError('Authentication required')
         return
       }
 
       const response = await fetch('/api/teams/available', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
       })
@@ -66,10 +66,10 @@ export default function JoinTeamModal({ isOpen, onClose, onJoinTeam }: JoinTeamM
   }
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && authToken) {
       fetchAvailableTeams()
     }
-  }, [isOpen])
+  }, [isOpen, authToken])
 
   useEffect(() => {
     if (searchTerm.trim() === '') {

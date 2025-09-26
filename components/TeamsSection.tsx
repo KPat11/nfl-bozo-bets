@@ -116,8 +116,8 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
       setShowCreateModal(false)
       setSuccess(`Team "${teamData.name}" created successfully!`)
       setError('')
-      onTeamCreated()
-      fetchTeams()
+      onTeamCreated() // This will refresh user data
+      fetchTeams() // This will refresh teams list
       
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000)
@@ -176,8 +176,8 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
         setShowJoinModal(false)
         setSuccess(`Successfully joined team "${data.team.name}"!`)
         setError('')
-        onTeamCreated()
-        fetchTeams()
+        onTeamCreated() // This will refresh user data
+        fetchTeams() // This will refresh teams list
         
         // Clear success message after 3 seconds
         setTimeout(() => setSuccess(''), 3000)
@@ -437,6 +437,7 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
           isOpen={showJoinModal}
           onClose={() => setShowJoinModal(false)}
           onJoinTeam={handleJoinTeam}
+          authToken={authToken}
         />
       )}
 
