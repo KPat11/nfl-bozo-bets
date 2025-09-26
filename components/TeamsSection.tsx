@@ -41,7 +41,27 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
   const fetchTeams = async () => {
     try {
-      const response = await fetch('/api/teams')
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
+      const response = await fetch('/api/teams', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          setError('Authentication expired. Please log in again.')
+          return
+        }
+        throw new Error('Failed to fetch teams')
+      }
+      
       const data = await response.json()
       setTeams(data)
     } catch (error) {
@@ -58,9 +78,16 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
   const handleCreateTeam = async (teamData: { name: string; description?: string; color?: string; lowestOdds?: number; highestOdds?: number }) => {
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
       const response = await fetch('/api/teams', {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(teamData),
@@ -107,8 +134,18 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     }
 
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
       const response = await fetch(`/api/teams/${teamId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       })
 
       if (!response.ok) {
@@ -134,10 +171,19 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     }
 
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
       // Use the members API to add user to team directly
       const response = await fetch(`/api/teams/${teamId}/members`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           userId: currentUser.id
         })
@@ -160,9 +206,18 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
   const handleToggleLock = async (teamId: string, isLocked: boolean) => {
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
       const response = await fetch(`/api/teams/${teamId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
           isLocked: !isLocked
         })
