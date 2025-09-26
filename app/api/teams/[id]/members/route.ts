@@ -86,9 +86,10 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Update user's teamId
-    console.log('🔍 Updating user teamId:', { targetUserId, teamId })
+    // Update user's teamId and add to team's users relation
+    console.log('🔍 Updating user teamId and team membership:', { targetUserId, teamId })
     
+    // First, update the user's teamId
     const updatedUser = await prisma.user.update({
       where: { id: targetUserId },
       data: { teamId },
@@ -100,7 +101,19 @@ export async function POST(
       }
     })
     
-    console.log('🔍 User updated successfully:', updatedUser)
+    // Then, add the user to the team's users relation
+    await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        users: {
+          connect: {
+            id: targetUserId
+          }
+        }
+      }
+    })
+    
+    console.log('🔍 User updated successfully and added to team:', updatedUser)
 
     return NextResponse.json({
       success: true,
@@ -175,7 +188,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'User is not in this team' }, { status: 400 })
     }
 
-    // Remove user from team (set teamId to null)
+    // Remove user from team (set teamId to null and remove from team's users relation)
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: { teamId: null },
@@ -184,6 +197,18 @@ export async function DELETE(
         name: true,
         email: true,
         teamId: true
+      }
+    })
+
+    // Also remove the user from the team's users relation
+    await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        users: {
+          disconnect: {
+            id: userId
+          }
+        }
       }
     })
 
