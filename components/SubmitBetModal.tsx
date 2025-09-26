@@ -806,7 +806,9 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   e.preventDefault()
                   e.stopPropagation()
                   const currentOdds = parseFloat(formData.odds) || 0
-                  const newOdds = Math.max(currentOdds - 0.5, -50)
+                  const newOdds = selectedTeamLimits?.lowestOdds !== null 
+                    ? Math.max(currentOdds - 0.5, selectedTeamLimits.lowestOdds)
+                    : currentOdds - 0.5
                   console.log('Decreasing odds from', currentOdds, 'to', newOdds)
                   setFormData(prev => {
                     const newData = { ...prev, odds: newOdds.toString() }
@@ -826,8 +828,8 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   value={formData.odds}
                   onChange={handleChange}
                   step="0.5"
-                  min="-50"
-                  max="50"
+                  min={selectedTeamLimits?.lowestOdds?.toString() || "-999"}
+                  max={selectedTeamLimits?.highestOdds?.toString() || "999"}
                   className={`w-full px-4 py-3 bg-gray-700 border rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors text-center relative z-[10002] ${
                     formData.fanduelId ? 'border-green-500 bg-green-900/20' : 'border-gray-600'
                   }`}
@@ -851,7 +853,9 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   e.preventDefault()
                   e.stopPropagation()
                   const currentOdds = parseFloat(formData.odds) || 0
-                  const newOdds = Math.min(currentOdds + 0.5, 50)
+                  const newOdds = selectedTeamLimits?.highestOdds !== null 
+                    ? Math.min(currentOdds + 0.5, selectedTeamLimits.highestOdds)
+                    : currentOdds + 0.5
                   console.log('Increasing odds from', currentOdds, 'to', newOdds)
                   setFormData(prev => {
                     const newData = { ...prev, odds: newOdds.toString() }
@@ -883,7 +887,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   </div>
                 </div>
               ) : (
-                <span>Use buttons or type directly. Range: -50 to +50</span>
+                <span>Use buttons or type directly. Range: {selectedTeamLimits?.lowestOdds || '-∞'} to {selectedTeamLimits?.highestOdds || '+∞'}</span>
               )}
               
               {/* Team Odds Limits Display */}
