@@ -267,15 +267,27 @@ export default function Home() {
             }, 1000) // Small delay to let the UI settle
           }
         } else {
+          console.log('❌ Token validation failed, clearing storage')
           // Token is invalid, clear storage
           localStorage.removeItem('authToken')
           localStorage.removeItem('authUser')
+          setAuthUser(null)
+          setAuthToken(null)
+          setIsAuthenticated(false)
         }
       } catch (error) {
-        console.error('Auth check error:', error)
+        console.error('❌ Auth check error:', error)
         localStorage.removeItem('authToken')
         localStorage.removeItem('authUser')
+        setAuthUser(null)
+        setAuthToken(null)
+        setIsAuthenticated(false)
       }
+    } else {
+      console.log('❌ No token or user found, setting unauthenticated')
+      setAuthUser(null)
+      setAuthToken(null)
+      setIsAuthenticated(false)
     }
   }
 
@@ -283,7 +295,40 @@ export default function Home() {
     checkAuthStatus()
     fetchUsers()
     checkForBiggestBozo()
-  }, [fetchUsers, checkForBiggestBozo]) // Include dependencies to fix ESLint warnings
+    
+    // Listen for storage changes from other tabs (event-driven, no polling)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'authToken' || e.key === 'authUser') {
+        console.log('🔄 Auth state sync: Storage changed, revalidating auth')
+        checkAuthStatus()
+      }
+    }
+    
+    // Add a visibility change listener to check auth when user returns to tab
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        const token = localStorage.getItem('authToken')
+        const user = localStorage.getItem('authUser')
+        
+        // Quick check: if we think we're authenticated but no token, fix it
+        if (isAuthenticated && (!token || !user)) {
+          console.log('🔄 Auth state sync: Tab focused, fixing out-of-sync state')
+          setAuthUser(null)
+          setAuthToken(null)
+          setIsAuthenticated(false)
+        }
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [fetchUsers, checkForBiggestBozo, isAuthenticated]) // Include dependencies to fix ESLint warnings
 
   // Update current week periodically
   useEffect(() => {

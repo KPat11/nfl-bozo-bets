@@ -45,7 +45,7 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     try {
       const token = localStorage.getItem('authToken')
       if (!token) {
-        setError('Authentication required')
+        setError('Please log in to view teams')
         return
       }
 
@@ -88,7 +88,11 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
       })
       
       if (!token) {
-        setError('Authentication required - No token found in localStorage')
+        setError('Please log in again - your session has expired')
+        // Force logout by clearing any stale state
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('authUser')
+        window.location.reload()
         return
       }
 
@@ -153,7 +157,11 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
       })
       
       if (!token) {
-        setError('Authentication required - No token found in localStorage')
+        setError('Please log in again - your session has expired')
+        // Force logout by clearing any stale state
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('authUser')
+        window.location.reload()
         return
       }
 
