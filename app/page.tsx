@@ -725,7 +725,7 @@ export default function Home() {
 
       {/* Stats Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {activeTab === 'bets' && (
+        {activeTab === 'bets' && isAuthenticated && (
           <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <div 
@@ -812,15 +812,15 @@ export default function Home() {
         </>
         )}
 
-        {activeTab === 'teams' && (
+        {activeTab === 'teams' && isAuthenticated && (
           <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} />
         )}
 
-                {activeTab === 'bozos' && (
+                {activeTab === 'bozos' && isAuthenticated && (
                   <BozoLeaderboard currentWeek={currentWeek} currentSeason={currentSeason} />
                 )}
 
-                {activeTab === 'leaderboard' && (
+                {activeTab === 'leaderboard' && isAuthenticated && (
                   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {/* Team Selection Header */}
                     <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 p-4 sm:p-6 mb-6">
@@ -857,8 +857,8 @@ export default function Home() {
                   </div>
                 )}
 
-                {activeTab === 'management' && (
-                  isAuthenticated && (authUser?.isAdmin || authUser?.isBiggestBozo) ? (
+                {activeTab === 'management' && isAuthenticated && (
+                  (authUser?.isAdmin || authUser?.isBiggestBozo) ? (
                     <MemberManagement onMemberUpdated={handleMemberUpdated} />
                   ) : (
                     <div className="bg-gray-800 rounded-lg p-8 text-center">
@@ -879,7 +879,7 @@ export default function Home() {
       </div>
 
               {/* Current Week Bets - Only show on bets tab */}
-              {activeTab === 'bets' && (
+              {activeTab === 'bets' && isAuthenticated && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
                   {/* Bozo Bets Section */}
                   <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700">
