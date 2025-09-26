@@ -14,6 +14,7 @@ import StatsManagementModal from '@/components/StatsManagementModal'
 import TeamManagementModal from '@/components/TeamManagementModal'
 import AuthModal from '@/components/AuthModal'
 import WelcomeModal from '@/components/WelcomeModal'
+import UserWalkthrough from '@/components/UserWalkthrough'
 import { getCurrentNFLWeek } from '@/lib/nflWeekUtils'
 
 interface User {
@@ -96,6 +97,7 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
+  const [showUserWalkthrough, setShowUserWalkthrough] = useState(false)
   const [selectedLeaderboardTeam, setSelectedLeaderboardTeam] = useState<string | null>(null)
 
   const fetchUsers = useCallback(async () => {
@@ -248,6 +250,14 @@ export default function Home() {
           setAuthUser(data.user)
           setAuthToken(token)
           setIsAuthenticated(true)
+          
+          // Check if this is a new user (no teamId) and show walkthrough
+          if (!data.user.teamId && !localStorage.getItem('walkthroughShown')) {
+            setTimeout(() => {
+              setShowUserWalkthrough(true)
+              localStorage.setItem('walkthroughShown', 'true')
+            }, 1000) // Small delay to let the UI settle
+          }
         } else {
           // Token is invalid, clear storage
           localStorage.removeItem('authToken')
@@ -567,6 +577,16 @@ export default function Home() {
               >
                 <Target className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Submit Bet</span>
+              </button>
+              
+              {/* Help/Walkthrough Button */}
+              <button 
+                onClick={() => setShowUserWalkthrough(true)}
+                className="flex items-center justify-center space-x-2 bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                title="User Walkthrough"
+              >
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
+                <span className="hidden sm:inline">Help</span>
               </button>
               {/* Authentication Buttons */}
               {!isAuthenticated ? (
@@ -1448,6 +1468,11 @@ export default function Home() {
         onClose={() => setShowWelcomeModal(false)}
         onJoinTeam={handleJoinTeam}
         userName={authUser?.name || 'there'}
+      />
+
+      <UserWalkthrough
+        isOpen={showUserWalkthrough}
+        onClose={() => setShowUserWalkthrough(false)}
       />
     </div>
   )
