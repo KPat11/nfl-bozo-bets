@@ -807,7 +807,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   e.stopPropagation()
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = selectedTeamLimits?.lowestOdds !== null 
-                    ? Math.max(currentOdds - 0.5, selectedTeamLimits.lowestOdds)
+                    ? Math.max(currentOdds - 0.5, selectedTeamLimits!.lowestOdds!)
                     : currentOdds - 0.5
                   console.log('Decreasing odds from', currentOdds, 'to', newOdds)
                   setFormData(prev => {
@@ -854,7 +854,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   e.stopPropagation()
                   const currentOdds = parseFloat(formData.odds) || 0
                   const newOdds = selectedTeamLimits?.highestOdds !== null 
-                    ? Math.min(currentOdds + 0.5, selectedTeamLimits.highestOdds)
+                    ? Math.min(currentOdds + 0.5, selectedTeamLimits!.highestOdds!)
                     : currentOdds + 0.5
                   console.log('Increasing odds from', currentOdds, 'to', newOdds)
                   setFormData(prev => {
