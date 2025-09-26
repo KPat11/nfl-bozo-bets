@@ -177,6 +177,96 @@ export default function ManagementModal({
     }
   }
 
+  const handleAutomatedProcessing = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/management/automated-processing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'run_automated'
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        if (data.processed) {
+          setMessage(`Automated processing completed: ${data.type} - ${JSON.stringify(data.result)}`)
+        } else {
+          setMessage('No automated processing needed at this time')
+        }
+      } else {
+        setMessage(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error running automated processing:', error)
+      setMessage('Error running automated processing')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDailyProcessing = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/management/automated-processing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'process_daily',
+          week: week,
+          season: season
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setMessage(`Daily processing completed: ${data.result.processedBets} bets processed (${data.result.hits} hits, ${data.result.bozos} bozos, ${data.result.pushes} pushes)`)
+      } else {
+        setMessage(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error running daily processing:', error)
+      setMessage('Error running daily processing')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleTuesdayProcessing = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch('/api/management/automated-processing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'process_tuesday',
+          week: week,
+          season: season
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success) {
+        if (data.result.biggestBozo) {
+          setMessage(`Tuesday processing completed: Biggest bozo assigned to ${data.result.biggestBozo.userName} with ${data.result.biggestBozo.odds} odds`)
+        } else {
+          setMessage('Tuesday processing completed: No biggest bozo found')
+        }
+      } else {
+        setMessage(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error running Tuesday processing:', error)
+      setMessage('Error running Tuesday processing')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'HIT': return <CheckCircle className="h-4 w-4 text-green-500" />
@@ -439,6 +529,40 @@ export default function ManagementModal({
                             </button>
                           </>
                         )}
+                      </div>
+                    </div>
+
+                    {/* Automated Processing Section */}
+                    <div className="bg-gray-700 rounded-lg p-4">
+                      <h4 className="font-medium text-white mb-3">Automated Processing</h4>
+                      <p className="text-gray-400 text-sm mb-4">
+                        Manually trigger automated bet processing tasks
+                      </p>
+                      
+                      <div className="space-y-3">
+                        <button
+                          onClick={handleAutomatedProcessing}
+                          disabled={loading}
+                          className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                        >
+                          {loading ? 'Processing...' : 'Run Automated Processing'}
+                        </button>
+                        
+                        <button
+                          onClick={handleDailyProcessing}
+                          disabled={loading}
+                          className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+                        >
+                          {loading ? 'Processing...' : 'Process Daily Bet Results'}
+                        </button>
+                        
+                        <button
+                          onClick={handleTuesdayProcessing}
+                          disabled={loading}
+                          className="w-full px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors disabled:opacity-50"
+                        >
+                          {loading ? 'Processing...' : 'Process Tuesday Bozo Annotation'}
+                        </button>
                       </div>
                     </div>
                   </div>

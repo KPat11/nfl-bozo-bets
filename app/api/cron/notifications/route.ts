@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendPaymentReminders, sendPropResultNotifications } from '@/lib/notifications'
+import { runAutomatedProcessing } from '@/lib/automatedBetProcessing'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,6 +20,15 @@ export async function POST(request: NextRequest) {
       case 'prop_results':
         await sendPropResultNotifications(week, season)
         return NextResponse.json({ message: 'Prop result notifications sent' })
+      
+      case 'automated_processing':
+        const processingResult = await runAutomatedProcessing()
+        return NextResponse.json({ 
+          message: 'Automated processing completed',
+          processed: processingResult.processed,
+          type: processingResult.type,
+          result: processingResult.result
+        })
       
       default:
         return NextResponse.json({ error: 'Invalid notification type' }, { status: 400 })
