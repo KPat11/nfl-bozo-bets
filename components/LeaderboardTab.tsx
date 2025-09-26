@@ -28,7 +28,15 @@ interface WeeklyStats {
   totalHits: number
 }
 
-export default function LeaderboardTab({ currentWeek, currentSeason }: { currentWeek: number; currentSeason: number }) {
+export default function LeaderboardTab({ 
+  currentWeek, 
+  currentSeason, 
+  selectedTeamId 
+}: { 
+  currentWeek: number; 
+  currentSeason: number; 
+  selectedTeamId?: string | null; 
+}) {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
   const [weeklyStats, setWeeklyStats] = useState<WeeklyStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,13 +44,16 @@ export default function LeaderboardTab({ currentWeek, currentSeason }: { current
 
   const fetchLeaderboard = useCallback(async () => {
     try {
-      const response = await fetch('/api/bozo-stats?limit=20')
+      const url = selectedTeamId 
+        ? `/api/bozo-stats?limit=20&teamId=${selectedTeamId}`
+        : '/api/bozo-stats?limit=20'
+      const response = await fetch(url)
       const data = await response.json()
       setLeaderboard(data.leaderboard || [])
     } catch (error) {
       console.error('Error fetching leaderboard:', error)
     }
-  }, [])
+  }, [selectedTeamId])
 
   const fetchWeeklyStats = useCallback(async () => {
     try {
@@ -61,7 +72,7 @@ export default function LeaderboardTab({ currentWeek, currentSeason }: { current
       setLoading(false)
     }
     fetchData()
-  }, [fetchLeaderboard, fetchWeeklyStats])
+  }, [fetchLeaderboard, fetchWeeklyStats, selectedTeamId])
 
   const getRankIcon = (index: number, total: number) => {
     if (index === 0) return <Crown className="h-6 w-6 text-yellow-500" />
