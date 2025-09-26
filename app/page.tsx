@@ -851,9 +851,9 @@ export default function Home() {
             {console.log('🔍 Teams Tab Debug:', { 
               isAuthenticated, 
               authUser: authUser?.name || 'None',
-              token: localStorage.getItem('authToken') ? 'Present' : 'Missing'
+              token: authToken ? 'Present' : 'Missing'
             })}
-            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} />
+            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} authToken={authToken} />
           </>
         )}
 

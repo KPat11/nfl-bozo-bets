@@ -29,9 +29,10 @@ interface TeamsSectionProps {
     email: string
     teamId?: string
   } | null
+  authToken?: string | null
 }
 
-export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectionProps) {
+export default function TeamsSection({ onTeamCreated, currentUser, authToken }: TeamsSectionProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
@@ -43,15 +44,14 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
   const fetchTeams = async () => {
     try {
-      const token = localStorage.getItem('authToken')
-      if (!token) {
+      if (!authToken) {
         setError('Please log in to view teams')
         return
       }
 
       const response = await fetch('/api/teams', {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       })
@@ -75,31 +75,28 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
   }
 
   useEffect(() => {
-    fetchTeams()
-  }, [])
+    if (authToken) {
+      fetchTeams()
+    }
+  }, [authToken])
 
   const handleCreateTeam = async (teamData: { name: string; description?: string; color?: string; lowestOdds?: number; highestOdds?: number }) => {
     try {
-      const token = localStorage.getItem('authToken')
       console.log('🔍 Create Team Debug:', { 
-        token: token ? 'Present' : 'Missing', 
-        tokenLength: token?.length || 0,
+        token: authToken ? 'Present' : 'Missing', 
+        tokenLength: authToken?.length || 0,
         currentUser: currentUser?.name || 'None'
       })
       
-      if (!token) {
+      if (!authToken) {
         setError('Please log in again - your session has expired')
-        // Force logout by clearing any stale state
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('authUser')
-        window.location.reload()
         return
       }
 
       const response = await fetch('/api/teams', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(teamData),
@@ -148,27 +145,22 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
   const handleJoinTeam = async (teamId: string) => {
     try {
-      const token = localStorage.getItem('authToken')
       console.log('🔍 Join Team Debug:', { 
-        token: token ? 'Present' : 'Missing', 
-        tokenLength: token?.length || 0,
+        token: authToken ? 'Present' : 'Missing', 
+        tokenLength: authToken?.length || 0,
         currentUser: currentUser?.name || 'None',
         teamId
       })
       
-      if (!token) {
+      if (!authToken) {
         setError('Please log in again - your session has expired')
-        // Force logout by clearing any stale state
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('authUser')
-        window.location.reload()
         return
       }
 
       const response = await fetch(`/api/teams/${teamId}/members`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
       })
