@@ -213,45 +213,6 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     }
   }
 
-  const handleJoinTeam = async (teamId: string) => {
-    if (!currentUser) {
-      setError('You must be logged in to join a team')
-      return
-    }
-
-    try {
-      const token = localStorage.getItem('authToken')
-      if (!token) {
-        setError('Authentication required')
-        return
-      }
-
-      // Use the members API to add user to team directly
-      const response = await fetch(`/api/teams/${teamId}/members`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({
-          userId: currentUser.id
-        })
-      })
-
-      const data = await response.json()
-
-      if (data.success) {
-        setSuccess(`Successfully joined ${data.team.name}!`)
-        fetchTeams()
-        onTeamCreated() // Refresh user data
-      } else {
-        setError(data.error || 'Failed to join team')
-      }
-    } catch (error) {
-      console.error('Error joining team:', error)
-      setError('Failed to join team')
-    }
-  }
 
   const handleToggleLock = async (teamId: string, isLocked: boolean) => {
     try {
