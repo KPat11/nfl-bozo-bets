@@ -167,9 +167,9 @@ export default function JoinTeamModal({ isOpen, onClose, onJoinTeam }: JoinTeamM
                         />
                         <h3 className="text-white font-semibold">{team.name}</h3>
                         {team.isLocked ? (
-                          <Lock className="h-4 w-4 text-red-400" title="Team is locked" />
+                          <Lock className="h-4 w-4 text-red-400" />
                         ) : (
-                          <Unlock className="h-4 w-4 text-green-400" title="Team is open" />
+                          <Unlock className="h-4 w-4 text-green-400" />
                         )}
                       </div>
                       
