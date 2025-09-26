@@ -203,12 +203,20 @@ export default function Home() {
     isBiggestBozo: boolean
     teamId?: string
   }, token: string) => {
+    console.log('🔐 Login process started:', { userName: user.name, tokenLength: token.length })
+    
     setAuthUser(user)
     setAuthToken(token)
     setIsAuthenticated(true)
     localStorage.setItem('authToken', token)
     localStorage.setItem('authUser', JSON.stringify(user))
     setShowAuthModal(false)
+    
+    console.log('🔐 Login process completed:', { 
+      isAuthenticated: true, 
+      user: user.name,
+      tokenStored: !!localStorage.getItem('authToken')
+    })
     
     // Check if this is a first-time user (no team assigned)
     if (!user.teamId) {
@@ -246,6 +254,13 @@ export default function Home() {
   const checkAuthStatus = async () => {
     const token = localStorage.getItem('authToken')
     const user = localStorage.getItem('authUser')
+    
+    console.log('🔍 checkAuthStatus called:', { 
+      token: token ? 'Present' : 'Missing', 
+      tokenLength: token?.length || 0,
+      user: user ? 'Present' : 'Missing',
+      currentAuthState: isAuthenticated
+    })
     
     if (token && user) {
       try {
@@ -307,16 +322,19 @@ export default function Home() {
     // Add a visibility change listener to check auth when user returns to tab
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        const token = localStorage.getItem('authToken')
-        const user = localStorage.getItem('authUser')
-        
-        // Quick check: if we think we're authenticated but no token, fix it
-        if (isAuthenticated && (!token || !user)) {
-          console.log('🔄 Auth state sync: Tab focused, fixing out-of-sync state')
-          setAuthUser(null)
-          setAuthToken(null)
-          setIsAuthenticated(false)
-        }
+        // Add a small delay to prevent race conditions with login
+        setTimeout(() => {
+          const token = localStorage.getItem('authToken')
+          const user = localStorage.getItem('authUser')
+          
+          // Quick check: if we think we're authenticated but no token, fix it
+          if (isAuthenticated && (!token || !user)) {
+            console.log('🔄 Auth state sync: Tab focused, fixing out-of-sync state')
+            setAuthUser(null)
+            setAuthToken(null)
+            setIsAuthenticated(false)
+          }
+        }, 1000) // 1 second delay to prevent race conditions
       }
     }
     
