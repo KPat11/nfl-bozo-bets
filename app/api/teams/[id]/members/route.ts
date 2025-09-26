@@ -132,6 +132,26 @@ export async function DELETE(
     const body = await request.json()
     const { userId } = removeMemberFromTeamSchema.parse(body)
 
+    // Get the authorization header for authentication
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    
+    // Validate the session to get the current user
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    }
+
+    const currentUser = session.user
+
     // Check if team exists
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const team = await (prisma as any).team.findUnique({

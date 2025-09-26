@@ -62,7 +62,23 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
   // Fetch all users
   const fetchAllUsers = async () => {
     try {
-      const response = await fetch('/api/users')
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setAllUsers([])
+        return
+      }
+
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const users = await response.json()
       setAllUsers(Array.isArray(users) ? users : [])
     } catch (error) {
@@ -120,9 +136,16 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
 
     setMemberLoading(true)
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
       const response = await fetch(`/api/teams/${team.id}/members`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userId }),
@@ -152,9 +175,16 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
 
     setMemberLoading(true)
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
       const response = await fetch(`/api/teams/${team.id}/members`, {
         method: 'DELETE',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ userId }),
@@ -193,9 +223,17 @@ export default function EditTeamModal({ isOpen, onClose, onTeamUpdated, team }: 
     }
 
     try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        setLoading(false)
+        return
+      }
+
       const response = await fetch(`/api/teams/${team.id}`, {
         method: 'PUT',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
