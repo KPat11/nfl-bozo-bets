@@ -7,6 +7,7 @@ import { prisma } from './db'
 import { updateBozoStats, calculateBiggestBozo } from './bozoStats'
 import { sendPropResultNotifications } from './notifications'
 import { shouldProcessBetsForWeek, getCurrentWeekProcessingStatus } from './nflSchedule'
+import { betResultService } from './betResultService'
 
 export interface GameCompletionInfo {
   gameId: string
@@ -84,13 +85,31 @@ export async function processDailyBetResults(week: number, season: number): Prom
             }
           })
 
-          // Count results
+          // Count results and update user statistics
           switch (betResult.status) {
             case 'HIT':
               result.hits++
+              // Update user hit count
+              await prisma.user.update({
+                where: { id: bet.userId },
+                data: {
+                  totalHits: {
+                    increment: 1
+                  }
+                }
+              })
               break
             case 'BOZO':
               result.bozos++
+              // Update user bozo count
+              await prisma.user.update({
+                where: { id: bet.userId },
+                data: {
+                  totalBozos: {
+                    increment: 1
+                  }
+                }
+              })
               break
             case 'PUSH':
               result.pushes++
@@ -127,24 +146,31 @@ export async function processDailyBetResults(week: number, season: number): Prom
 async function processIndividualBet(bet: any, week: number, season: number): Promise<{
   status: 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED'
 } | null> {
-  // For now, we'll use mock logic since we don't have real game data
-  // In a real implementation, you would:
-  // 1. Check if the game is completed
-  // 2. Get final game stats
-  // 3. Compare against the prop line
-  // 4. Determine if the bet hit or missed
-
-  // Mock logic: randomly determine result for demonstration
-  const random = Math.random()
-  
-  if (random < 0.05) {
-    return { status: 'CANCELLED' } // 5% chance of cancellation
-  } else if (random < 0.1) {
-    return { status: 'PUSH' } // 5% chance of push
-  } else if (random < 0.6) {
-    return { status: 'HIT' } // 50% chance of hit
-  } else {
-    return { status: 'BOZO' } // 40% chance of bozo
+  try {
+    // Use the bet result service to check actual results
+    const betResult = await betResultService.checkBetResult({
+      id: bet.id,
+      prop: bet.prop,
+      odds: bet.odds || 0,
+      betType: bet.betType,
+      week,
+      season
+    })
+    
+    if (!betResult) {
+      console.error(`Could not determine result for bet ${bet.id}`)
+      return null
+    }
+    
+    console.log(`Processed bet ${bet.id}: ${bet.prop} (${bet.odds}) -> ${betResult.status}`)
+    if (betResult.actualResult) {
+      console.log(`Actual result: ${betResult.actualResult}`)
+    }
+    
+    return { status: betResult.status }
+  } catch (error) {
+    console.error(`Error processing bet ${bet.id}:`, error)
+    return null
   }
 }
 
@@ -239,9 +265,14 @@ export function shouldProcessTuesdayBozoAnnotation(): boolean {
  * Check if it's time to process daily bet results
  * Should run 4 hours after the last game starts
  */
-export function shouldProcessDailyBetResults(): boolean {
+export async function shouldProcessDailyBetResults(): Promise<boolean> {
   const { week, season } = getCurrentProcessingWeek()
-  return shouldProcessBetsForWeek(week, season)
+  
+  // Check if all games are completed and it's time to process
+  const allGamesCompleted = await betResultService.areAllGamesCompleted(week, season)
+  const shouldProcess = await betResultService.shouldProcessBets(week, season)
+  
+  return allGamesCompleted && shouldProcess
 }
 
 /**
@@ -261,7 +292,7 @@ export function getCurrentProcessingWeek(): { week: number; season: number } {
 /**
  * Get processing status information for the current week
  */
-export function getProcessingStatus(): {
+export async function getProcessingStatus(): Promise<{
   week: number
   season: number
   shouldProcessDaily: boolean
@@ -269,14 +300,14 @@ export function getProcessingStatus(): {
   nextProcessingTime: string | null
   gamesCompleted: number
   totalGames: number
-} {
+}> {
   const { week, season } = getCurrentProcessingWeek()
   const status = getCurrentWeekProcessingStatus(week, season)
   
   return {
     week,
     season,
-    shouldProcessDaily: shouldProcessDailyBetResults(),
+    shouldProcessDaily: await shouldProcessDailyBetResults(),
     shouldProcessTuesday: shouldProcessTuesdayBozoAnnotation(),
     nextProcessingTime: status.nextProcessingTime,
     gamesCompleted: status.gamesCompleted,
@@ -302,7 +333,7 @@ export async function runAutomatedProcessing(): Promise<{
       type: 'tuesday',
       result
     }
-  } else if (shouldProcessDailyBetResults()) {
+  } else if (await shouldProcessDailyBetResults()) {
     console.log('Running daily bet results processing')
     const result = await processDailyBetResults(week, season)
     return {

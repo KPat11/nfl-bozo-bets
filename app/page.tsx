@@ -96,6 +96,7 @@ export default function Home() {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
+  const [selectedLeaderboardTeam, setSelectedLeaderboardTeam] = useState<string | null>(null)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -310,9 +311,51 @@ export default function Home() {
   }
 
   const getCurrentWeekBets = () => {
-    return users.flatMap(user => 
+    // Only show bets from users in the current user's team
+    if (!authUser?.teamId) return []
+    
+    const teamMembers = users.filter(user => user.teamId === authUser.teamId)
+    return teamMembers.flatMap(user => 
       user.weeklyBets?.filter(bet => bet.week === currentWeek && bet.season === currentSeason) || []
     )
+  }
+
+  const getCurrentWeekBetsByTeam = () => {
+    // Group bets by team for display
+    const teamGroups: { [teamId: string]: { teamName: string; teamColor?: string; bets: WeeklyBet[] } } = {}
+    
+    if (!authUser?.teamId) return teamGroups
+    
+    const teamMembers = users.filter(user => user.teamId === authUser.teamId)
+    
+    teamMembers.forEach(user => {
+      if (!user.teamId) return
+      
+      const teamBets = user.weeklyBets?.filter(bet => bet.week === currentWeek && bet.season === currentSeason) || []
+      
+      if (teamBets.length > 0) {
+        if (!teamGroups[user.teamId]) {
+          teamGroups[user.teamId] = {
+            teamName: user.team?.name || 'Unknown Team',
+            teamColor: user.team?.color,
+            bets: []
+          }
+        }
+        teamGroups[user.teamId].bets.push(...teamBets)
+      }
+    })
+    
+    return teamGroups
+  }
+
+  const getUserTeams = () => {
+    // Get all teams the user belongs to
+    if (!authUser?.teamId) return []
+    
+    const userTeam = users.find(user => user.id === authUser.id)?.team
+    if (!userTeam) return []
+    
+    return [userTeam]
   }
 
   const getBozoBets = () => {
@@ -394,6 +437,95 @@ export default function Home() {
     )
   }
 
+  // Auth Gate - Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          {/* Logo and Title */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
+              <Trophy className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
+              NFL Bozo Bets
+            </h1>
+            <p className="text-gray-300 text-lg">
+              Join the ultimate NFL betting experience
+            </p>
+          </div>
+
+          {/* Auth Card */}
+          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 shadow-2xl">
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-2xl font-semibold text-white mb-2">
+                  Welcome Back
+                </h2>
+                <p className="text-gray-400">
+                  Sign in to access your betting dashboard
+                </p>
+              </div>
+
+              <button 
+                onClick={() => setShowAuthModal(true)}
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-3"
+              >
+                <LogIn className="h-5 w-5" />
+                <span>Sign In / Sign Up</span>
+              </button>
+
+              <div className="text-center">
+                <p className="text-gray-400 text-sm">
+                  New to NFL Bozo Bets? Create an account to get started!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Features */}
+          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="bg-blue-500/20 rounded-lg p-4 sm:p-6">
+                <Target className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 mx-auto mb-2" />
+                <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Submit Bets</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">Place your weekly NFL bets</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="bg-purple-500/20 rounded-lg p-4 sm:p-6">
+                <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-purple-400 mx-auto mb-2" />
+                <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Track Results</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">Monitor hits and misses</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="bg-green-500/20 rounded-lg p-4 sm:p-6">
+                <Users className="h-8 w-8 sm:h-10 sm:w-10 text-green-400 mx-auto mb-2" />
+                <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Join Teams</h3>
+                <p className="text-gray-400 text-xs sm:text-sm">Compete with friends</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Auth Modal */}
+        {showAuthModal && (
+          <AuthModal 
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            onSuccess={(user, token) => {
+              setAuthUser(user)
+              setAuthToken(token)
+              setIsAuthenticated(true)
+              setShowAuthModal(false)
+            }}
+          />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-900">
       {/* Header */}
@@ -431,7 +563,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
               <button 
                 onClick={() => setShowSubmitBetModal(true)}
-                className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg text-sm sm:text-base font-semibold border border-orange-400/30"
               >
                 <Target className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Submit Bet</span>
@@ -440,7 +572,7 @@ export default function Home() {
               {!isAuthenticated ? (
                 <button 
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
+                  className="flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
                 >
                   <LogIn className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Login</span>
@@ -567,8 +699,11 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'bets' && (
           <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-blue-500 transition-colors">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div 
+            className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-blue-500 transition-colors cursor-pointer hover:scale-105 transform"
+            onClick={() => setActiveTab('teams')}
+          >
             <div className="flex items-center">
               <div className="p-2 sm:p-3 rounded-lg bg-blue-500/20">
                 <Users className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
@@ -580,7 +715,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-green-500 transition-colors">
+          <div 
+            className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-green-500 transition-colors cursor-pointer hover:scale-105 transform"
+            onClick={() => setActiveTab('bets')}
+          >
             <div className="flex items-center">
               <div className="p-2 sm:p-3 rounded-lg bg-green-500/20">
                 <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-green-400" />
@@ -592,7 +730,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-yellow-500 transition-colors">
+          <div 
+            className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-yellow-500 transition-colors cursor-pointer hover:scale-105 transform"
+            onClick={() => setActiveTab('bets')}
+          >
             <div className="flex items-center">
               <div className="p-2 sm:p-3 rounded-lg bg-yellow-500/20">
                 <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-yellow-400" />
@@ -604,7 +745,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-purple-500 transition-colors">
+          <div 
+            className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-purple-500 transition-colors cursor-pointer hover:scale-105 transform"
+            onClick={() => setActiveTab('bozos')}
+          >
             <div className="flex items-center">
               <div className="p-2 sm:p-3 rounded-lg bg-purple-500/20">
                 <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-purple-400" />
@@ -618,63 +762,21 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-red-500 transition-colors">
-            <div className="flex items-center">
-              <div className="p-2 sm:p-3 rounded-lg bg-red-500/20">
-                <Trophy className="h-6 w-6 sm:h-8 sm:w-8 text-red-400" />
-              </div>
-              <div className="ml-3 sm:ml-4">
-                <p className="text-xs sm:text-sm font-medium text-gray-400">All-Time Bozos</p>
-                <p className="text-2xl sm:text-3xl font-bold text-white">{getTotalBozos()}</p>
-              </div>
-            </div>
-          </div>
 
           {/* Running Record Card */}
-          <div className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-blue-500 transition-colors">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="p-2 sm:p-3 rounded-lg bg-blue-500/20">
-                  <Target className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
-                </div>
-                <div className="ml-3 sm:ml-4">
-                  <p className="text-xs sm:text-sm font-medium text-gray-400">Your Record</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">
-                    {getCurrentUserRecord().hits}-{getCurrentUserRecord().misses}
-                  </p>
-                </div>
+          <div 
+            className="bg-gray-800 rounded-xl shadow-xl p-4 sm:p-6 border border-gray-700 hover:border-blue-500 transition-colors cursor-pointer hover:scale-105 transform"
+            onClick={() => setActiveTab('leaderboard')}
+          >
+            <div className="flex items-center">
+              <div className="p-2 sm:p-3 rounded-lg bg-blue-500/20">
+                <Target className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400" />
               </div>
-              <div className="flex space-x-1">
-                <button
-                  onClick={() => setRecordView('total')}
-                  className={`px-2 py-1 text-xs rounded ${
-                    recordView === 'total' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                  }`}
-                >
-                  Total
-                </button>
-                <button
-                  onClick={() => setRecordView('bozo')}
-                  className={`px-2 py-1 text-xs rounded ${
-                    recordView === 'bozo' 
-                      ? 'bg-red-600 text-white' 
-                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                  }`}
-                >
-                  Bozo
-                </button>
-                <button
-                  onClick={() => setRecordView('favorite')}
-                  className={`px-2 py-1 text-xs rounded ${
-                    recordView === 'favorite' 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                  }`}
-                >
-                  Fav
-                </button>
+              <div className="ml-3 sm:ml-4">
+                <p className="text-xs sm:text-sm font-medium text-gray-400">Your Record</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white">
+                  {getCurrentUserRecord().hits}-{getCurrentUserRecord().misses}
+                </p>
               </div>
             </div>
           </div>
@@ -691,7 +793,40 @@ export default function Home() {
                 )}
 
                 {activeTab === 'leaderboard' && (
-                  <LeaderboardTab currentWeek={currentWeek} currentSeason={currentSeason} />
+                  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {/* Team Selection Header */}
+                    <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 p-4 sm:p-6 mb-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                        <div>
+                          <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">🏆 Leaderboard</h2>
+                          <p className="text-gray-400 text-sm sm:text-base">
+                            All-time statistics and rankings
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                          <label className="text-sm font-medium text-gray-300">Team:</label>
+                          <select
+                            value={selectedLeaderboardTeam || ''}
+                            onChange={(e) => setSelectedLeaderboardTeam(e.target.value || null)}
+                            className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-auto"
+                          >
+                            <option value="">All Teams</option>
+                            {getUserTeams().map(team => (
+                              <option key={team.id} value={team.id}>
+                                {team.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <LeaderboardTab 
+                      currentWeek={currentWeek} 
+                      currentSeason={currentSeason}
+                      selectedTeamId={selectedLeaderboardTeam}
+                    />
+                  </div>
                 )}
 
                 {activeTab === 'management' && (
@@ -729,7 +864,7 @@ export default function Home() {
                         </span>
                       </div>
                       <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                        Risky picks that could go either way
+                        Risky picks that could go either way - Your Team Only
                       </p>
                     </div>
                   
@@ -983,7 +1118,7 @@ export default function Home() {
               </span>
             </div>
             <p className="text-gray-400 text-xs sm:text-sm mt-1">
-              Safe bets with high confidence
+              Safe bets with high confidence - Your Team Only
             </p>
           </div>
         

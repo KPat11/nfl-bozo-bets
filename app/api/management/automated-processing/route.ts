@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return information about automated processing status
-    const status = getProcessingStatus()
+    const status = await getProcessingStatus()
     
     return NextResponse.json({
       success: true,
