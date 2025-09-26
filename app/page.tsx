@@ -67,6 +67,7 @@ export default function Home() {
   const [currentSeason] = useState(2025)
   const [loading, setLoading] = useState(true)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
+  const [submitBetRefreshTrigger, setSubmitBetRefreshTrigger] = useState(0)
   const [showEditBetModal, setShowEditBetModal] = useState(false)
   const [showBozoTrollModal, setShowBozoTrollModal] = useState(false)
   const [showManagementModal, setShowManagementModal] = useState(false)
@@ -147,6 +148,7 @@ export default function Home() {
 
   const handleTeamCreated = () => {
     fetchUsers()
+    setSubmitBetRefreshTrigger(prev => prev + 1) // Trigger submit bet modal refresh
   }
 
   const handleJoinTeam = () => {
@@ -1430,6 +1432,7 @@ export default function Home() {
         week={currentWeek}
         season={currentSeason}
         currentUser={currentUser || undefined}
+        refreshTrigger={submitBetRefreshTrigger}
       />
       
       <EditBetModal

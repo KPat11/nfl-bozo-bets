@@ -44,9 +44,10 @@ interface SubmitBetModalProps {
   week: number
   season: number
   currentUser?: User
+  refreshTrigger?: number // Add this to trigger team refresh
 }
 
-export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser }: SubmitBetModalProps) {
+export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser, refreshTrigger }: SubmitBetModalProps) {
   const [users, setUsers] = useState<User[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
@@ -323,7 +324,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, week, season]) // Simplified dependencies to prevent infinite loops
+  }, [isOpen, week, season, refreshTrigger]) // Added refreshTrigger to refetch teams when user joins a team
 
   // Keyboard handlers
   useEffect(() => {
