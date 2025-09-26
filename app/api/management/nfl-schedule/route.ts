@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateSession } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { updateNFLSchedule, getWeekSchedule, getProcessingStatus } from '@/lib/nflSchedule'
+import { updateNFLSchedule, getWeekSchedule, getCurrentWeekProcessingStatus } from '@/lib/nflSchedule'
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         })
 
       case 'get_processing_status':
-        const status = getProcessingStatus()
+        const status = getCurrentWeekProcessingStatus(4, 2025) // Current week/season
         return NextResponse.json({
           success: true,
           status: status
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Return current processing status
-    const status = getProcessingStatus()
+    const status = getCurrentWeekProcessingStatus(4, 2025) // Current week/season
     
     return NextResponse.json({
       success: true,
