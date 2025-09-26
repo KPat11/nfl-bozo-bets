@@ -94,7 +94,6 @@ export default function Home() {
     teamId?: string
   } | null>(null)
   const [authToken, setAuthToken] = useState<string | null>(null)
-  const [justLoggedIn, setJustLoggedIn] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
@@ -206,7 +205,7 @@ export default function Home() {
   }, token: string) => {
     console.log('🔐 Login process started:', { userName: user.name, tokenLength: token.length })
     
-    setJustLoggedIn(true) // Prevent sync from interfering
+    // Set authentication state immediately
     setAuthUser(user)
     setAuthToken(token)
     setIsAuthenticated(true)
@@ -219,11 +218,6 @@ export default function Home() {
       user: user.name,
       tokenStored: !!localStorage.getItem('authToken')
     })
-    
-    // Clear the justLoggedIn flag after a delay
-    setTimeout(() => {
-      setJustLoggedIn(false)
-    }, 3000) // 3 second grace period
     
     // Check if this is a first-time user (no team assigned)
     if (!user.teamId) {
@@ -268,6 +262,12 @@ export default function Home() {
       user: user ? 'Present' : 'Missing',
       currentAuthState: isAuthenticated
     })
+    
+    // If we're already authenticated and have valid data, don't re-validate
+    if (isAuthenticated && token && user) {
+      console.log('🔍 Already authenticated, skipping check')
+      return
+    }
     
     if (token && user) {
       try {
@@ -317,54 +317,7 @@ export default function Home() {
     checkAuthStatus()
     fetchUsers()
     checkForBiggestBozo()
-    
-    // Listen for storage changes from other tabs (event-driven, no polling)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'authToken' || e.key === 'authUser') {
-        console.log('🔄 Auth state sync: Storage changed, revalidating auth')
-        // Don't sync if we just logged in (prevent race condition)
-        if (!justLoggedIn) {
-          checkAuthStatus()
-        } else {
-          console.log('🔄 Auth state sync: Skipping - just logged in')
-        }
-      }
-    }
-    
-    // Add a visibility change listener to check auth when user returns to tab
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        // Add a small delay to prevent race conditions with login
-        setTimeout(() => {
-          // Don't sync if we just logged in (prevent race condition)
-          if (justLoggedIn) {
-            console.log('🔄 Auth state sync: Skipping visibility check - just logged in')
-            return
-          }
-          
-          const token = localStorage.getItem('authToken')
-          const user = localStorage.getItem('authUser')
-          
-          // Quick check: if we think we're authenticated but no token, fix it
-          if (isAuthenticated && (!token || !user)) {
-            console.log('🔄 Auth state sync: Tab focused, fixing out-of-sync state')
-            setAuthUser(null)
-            setAuthToken(null)
-            setIsAuthenticated(false)
-          }
-        }, 1000) // 1 second delay to prevent race conditions
-      }
-    }
-    
-    window.addEventListener('storage', handleStorageChange)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    
-    // Cleanup
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
-  }, [fetchUsers, checkForBiggestBozo, isAuthenticated, justLoggedIn]) // Include dependencies to fix ESLint warnings
+  }, [fetchUsers, checkForBiggestBozo]) // Simplified - no complex sync logic
 
   // Update current week periodically
   useEffect(() => {
