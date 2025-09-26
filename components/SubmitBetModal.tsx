@@ -451,8 +451,8 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     const selectedTeam = teams.find(team => team.id === teamId)
     if (selectedTeam) {
       setSelectedTeamLimits({
-        lowestOdds: selectedTeam.lowestOdds,
-        highestOdds: selectedTeam.highestOdds
+        lowestOdds: selectedTeam.lowestOdds ?? null,
+        highestOdds: selectedTeam.highestOdds ?? null
       })
     } else {
       setSelectedTeamLimits(null)
