@@ -19,6 +19,13 @@ export async function POST(
     const { id: teamId } = await params
     const body = await request.json()
     const { userId } = addMemberToTeamSchema.parse(body)
+    
+    console.log('🔍 Join Team API Debug:', { 
+      teamId, 
+      body, 
+      userId: userId || 'will use current user',
+      hasBody: !!body
+    })
 
     // Get the authorization header for authentication
     const authHeader = request.headers.get('authorization')
@@ -80,6 +87,8 @@ export async function POST(
     }
 
     // Update user's teamId
+    console.log('🔍 Updating user teamId:', { targetUserId, teamId })
+    
     const updatedUser = await prisma.user.update({
       where: { id: targetUserId },
       data: { teamId },
@@ -90,6 +99,8 @@ export async function POST(
         teamId: true
       }
     })
+    
+    console.log('🔍 User updated successfully:', updatedUser)
 
     return NextResponse.json({
       success: true,

@@ -163,6 +163,7 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
           'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({}) // Send empty body, userId will default to current user
       })
 
       if (!response.ok) {
