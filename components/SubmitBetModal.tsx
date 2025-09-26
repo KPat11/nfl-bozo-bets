@@ -91,7 +91,24 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch('/api/users')
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        console.log('No auth token found for users fetch')
+        setUsers([])
+        return
+      }
+
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
       console.log('Fetched users:', data) // Debug log
       setUsers(Array.isArray(data) ? data : [])
@@ -103,7 +120,24 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   const fetchTeams = useCallback(async () => {
     try {
-      const response = await fetch('/api/teams')
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        console.log('No auth token found for teams fetch')
+        setTeams([])
+        return
+      }
+
+      const response = await fetch('/api/teams', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
       console.log('Fetched teams:', data) // Debug log
       setTeams(Array.isArray(data) ? data : [])
