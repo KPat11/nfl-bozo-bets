@@ -10,10 +10,33 @@ const createUserSchema = z.object({
   teamId: z.string().optional()
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Fetch users with all available fields
+    // Get the authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    
+    // Validate the session to get the current user
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    }
+
+    const currentUser = session.user
+
+    // Only fetch users from the same team as the current user
     const users = await prisma.user.findMany({
+      where: {
+        teamId: currentUser.teamId // Only show users from the same team
+      },
       include: {
         team: true,
         weeklyBets: true

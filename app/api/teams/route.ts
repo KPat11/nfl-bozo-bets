@@ -10,11 +10,39 @@ const createTeamSchema = z.object({
   highestOdds: z.number().int().min(-9999999).max(9999999).optional()
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Get the authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    
+    // Validate the session to get the current user
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    }
+
+    const currentUser = session.user
+
     console.log('🔍 Fetching teams...')
     
+    // Only fetch teams the user belongs to
     const teams = await prisma.team.findMany({
+      where: {
+        users: {
+          some: {
+            id: currentUser.id // Only show teams where the current user is a member
+          }
+        }
+      },
       include: {
         users: {
           select: {
