@@ -813,7 +813,14 @@ export default function Home() {
         )}
 
         {activeTab === 'teams' && isAuthenticated && (
-          <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} />
+          <>
+            {console.log('🔍 Teams Tab Debug:', { 
+              isAuthenticated, 
+              authUser: authUser?.name || 'None',
+              token: localStorage.getItem('authToken') ? 'Present' : 'Missing'
+            })}
+            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} />
+          </>
         )}
 
                 {activeTab === 'bozos' && isAuthenticated && (

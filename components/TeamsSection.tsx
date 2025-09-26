@@ -81,8 +81,14 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
   const handleCreateTeam = async (teamData: { name: string; description?: string; color?: string; lowestOdds?: number; highestOdds?: number }) => {
     try {
       const token = localStorage.getItem('authToken')
+      console.log('🔍 Create Team Debug:', { 
+        token: token ? 'Present' : 'Missing', 
+        tokenLength: token?.length || 0,
+        currentUser: currentUser?.name || 'None'
+      })
+      
       if (!token) {
-        setError('Authentication required')
+        setError('Authentication required - No token found in localStorage')
         return
       }
 
@@ -139,8 +145,15 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
   const handleJoinTeam = async (teamId: string) => {
     try {
       const token = localStorage.getItem('authToken')
+      console.log('🔍 Join Team Debug:', { 
+        token: token ? 'Present' : 'Missing', 
+        tokenLength: token?.length || 0,
+        currentUser: currentUser?.name || 'None',
+        teamId
+      })
+      
       if (!token) {
-        setError('Authentication required')
+        setError('Authentication required - No token found in localStorage')
         return
       }
 
