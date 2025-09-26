@@ -95,6 +95,22 @@ const ENHANCED_MOCK_PROPS: EnhancedFanDuelProp[] = [
     status: 'PENDING',
     confidence: 1.0
   },
+  {
+    id: 'fd-team-5',
+    fanduelId: 'fd-team-5',
+    player: 'Seahawks',
+    team: 'Seahawks',
+    prop: 'Moneyline',
+    line: 0,
+    odds: +200,
+    overOdds: +200,
+    underOdds: -250,
+    week: 4,
+    season: 2025,
+    gameTime: '2025-01-15T20:20:00Z',
+    status: 'PENDING',
+    confidence: 1.0
+  },
   // Player-based props
   {
     id: 'fd-1',

@@ -16,6 +16,8 @@ interface Team {
   name: string
   description?: string
   color?: string
+  lowestOdds?: number | null
+  highestOdds?: number | null
   users: Array<{
     id: string
     name: string
@@ -48,6 +50,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   const [users, setUsers] = useState<User[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
+  const [selectedTeamLimits, setSelectedTeamLimits] = useState<{ lowestOdds: number | null; highestOdds: number | null } | null>(null)
   const [formData, setFormData] = useState({
     userId: '',
     teamId: '',
@@ -380,6 +383,21 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       return
     }
 
+    // Validate odds against team limits
+    if (formData.odds && selectedTeamLimits) {
+      const oddsValue = parseFloat(formData.odds)
+      if (selectedTeamLimits.lowestOdds !== null && oddsValue < selectedTeamLimits.lowestOdds) {
+        setError(`Odds ${oddsValue} is below team minimum of ${selectedTeamLimits.lowestOdds}`)
+        setLoading(false)
+        return
+      }
+      if (selectedTeamLimits.highestOdds !== null && oddsValue > selectedTeamLimits.highestOdds) {
+        setError(`Odds ${oddsValue} is above team maximum of ${selectedTeamLimits.highestOdds}`)
+        setLoading(false)
+        return
+      }
+    }
+
     try {
       const submitData = {
         ...formData,
@@ -428,6 +446,17 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   const handleTeamChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const teamId = e.target.value
     console.log('Team selection changed:', teamId)
+    
+    // Find the selected team and set its odds limits
+    const selectedTeam = teams.find(team => team.id === teamId)
+    if (selectedTeam) {
+      setSelectedTeamLimits({
+        lowestOdds: selectedTeam.lowestOdds,
+        highestOdds: selectedTeam.highestOdds
+      })
+    } else {
+      setSelectedTeamLimits(null)
+    }
     
     setFormData(prev => {
       const newData = { 
@@ -855,6 +884,21 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 </div>
               ) : (
                 <span>Use buttons or type directly. Range: -50 to +50</span>
+              )}
+              
+              {/* Team Odds Limits Display */}
+              {selectedTeamLimits && (selectedTeamLimits.lowestOdds !== null || selectedTeamLimits.highestOdds !== null) && (
+                <div className="mt-2 p-2 bg-blue-900/20 border border-blue-500/30 rounded text-blue-300">
+                  <div className="font-medium">Team Odds Limits:</div>
+                  <div className="text-xs">
+                    {selectedTeamLimits.lowestOdds !== null && (
+                      <span>Min: {selectedTeamLimits.lowestOdds} </span>
+                    )}
+                    {selectedTeamLimits.highestOdds !== null && (
+                      <span>Max: {selectedTeamLimits.highestOdds}</span>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           </div>

@@ -85,6 +85,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `User already has a ${betType.toLowerCase()} bet for this week` }, { status: 409 })
     }
 
+    // Validate odds against team limits if odds are provided
+    if (odds !== undefined && odds !== null) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        include: { team: true }
+      })
+
+      if (user?.team) {
+        const team = user.team
+        if (team.lowestOdds !== null && odds < team.lowestOdds) {
+          return NextResponse.json({ 
+            error: `Odds ${odds} is below team minimum of ${team.lowestOdds}` 
+          }, { status: 400 })
+        }
+        if (team.highestOdds !== null && odds > team.highestOdds) {
+          return NextResponse.json({ 
+            error: `Odds ${odds} is above team maximum of ${team.highestOdds}` 
+          }, { status: 400 })
+        }
+      }
+    }
+
     const weeklyBet = await prisma.weeklyBet.create({
       data: {
         userId,
