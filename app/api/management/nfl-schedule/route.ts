@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/db'
-import { runAutomatedProcessing, processDailyBetResults, processTuesdayBozoAnnotation, getProcessingStatus } from '@/lib/automatedBetProcessing'
+import { updateNFLSchedule, getWeekSchedule, getProcessingStatus } from '@/lib/nflSchedule'
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,42 +22,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { action, week, season } = await request.json()
+    const { action, scheduleData, week, season } = await request.json()
 
     switch (action) {
-      case 'run_automated':
-        console.log('Manually triggering automated processing...')
-        const result = await runAutomatedProcessing()
+      case 'update_schedule':
+        if (!scheduleData || !Array.isArray(scheduleData)) {
+          return NextResponse.json({ error: 'Invalid schedule data' }, { status: 400 })
+        }
+        
+        console.log('Updating NFL schedule with new data...')
+        updateNFLSchedule(scheduleData)
+        
         return NextResponse.json({
           success: true,
-          processed: result.processed,
-          type: result.type,
-          result: result.result,
-          timestamp: new Date().toISOString()
+          message: `Updated NFL schedule with ${scheduleData.length} games`,
+          gamesAdded: scheduleData.length
         })
 
-      case 'process_daily':
+      case 'get_schedule':
         if (!week || !season) {
           return NextResponse.json({ error: 'Week and season required' }, { status: 400 })
         }
-        console.log(`Manually processing daily bet results for Week ${week}, Season ${season}`)
-        const dailyResult = await processDailyBetResults(week, season)
+        
+        const schedule = getWeekSchedule(week, season)
         return NextResponse.json({
           success: true,
-          result: dailyResult,
-          timestamp: new Date().toISOString()
+          schedule: schedule
         })
 
-      case 'process_tuesday':
-        if (!week || !season) {
-          return NextResponse.json({ error: 'Week and season required' }, { status: 400 })
-        }
-        console.log(`Manually processing Tuesday bozo annotation for Week ${week}, Season ${season}`)
-        const tuesdayResult = await processTuesdayBozoAnnotation(week, season)
+      case 'get_processing_status':
+        const status = getProcessingStatus()
         return NextResponse.json({
           success: true,
-          result: tuesdayResult,
-          timestamp: new Date().toISOString()
+          status: status
         })
 
       default:
@@ -65,7 +62,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Error in automated processing management:', error)
+    console.error('Error in NFL schedule management:', error)
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -91,38 +88,20 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    // Return information about automated processing status
+    // Return current processing status
     const status = getProcessingStatus()
     
     return NextResponse.json({
       success: true,
-      ...status,
+      status: status,
       timestamp: new Date().toISOString()
     })
 
   } catch (error) {
-    console.error('Error getting automated processing status:', error)
+    console.error('Error getting NFL schedule status:', error)
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
-}
-
-// Helper functions (imported from automatedBetProcessing)
-function getCurrentProcessingWeek(): { week: number; season: number } {
-  return { week: 4, season: 2025 }
-}
-
-function shouldProcessDailyBetResults(): boolean {
-  const now = new Date()
-  const hour = now.getHours()
-  return hour === 1
-}
-
-function shouldProcessTuesdayBozoAnnotation(): boolean {
-  const now = new Date()
-  const dayOfWeek = now.getDay()
-  const hour = now.getHours()
-  return dayOfWeek === 2 && hour === 2
 }

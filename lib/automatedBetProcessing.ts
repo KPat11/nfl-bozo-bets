@@ -6,6 +6,7 @@
 import { prisma } from './db'
 import { updateBozoStats, calculateBiggestBozo } from './bozoStats'
 import { sendPropResultNotifications } from './notifications'
+import { shouldProcessBetsForWeek, getCurrentWeekProcessingStatus } from './nflSchedule'
 
 export interface GameCompletionInfo {
   gameId: string
@@ -238,14 +239,11 @@ export function shouldProcessTuesdayBozoAnnotation(): boolean {
 
 /**
  * Check if it's time to process daily bet results
- * Should run after the last game of each day
+ * Should run 4 hours after the last game starts
  */
 export function shouldProcessDailyBetResults(): boolean {
-  const now = new Date()
-  const hour = now.getHours()
-  
-  // Process at 1:00 AM daily (after all games should be complete)
-  return hour === 1
+  const { week, season } = getCurrentProcessingWeek()
+  return shouldProcessBetsForWeek(week, season)
 }
 
 /**
@@ -259,6 +257,32 @@ export function getCurrentProcessingWeek(): { week: number; season: number } {
   return {
     week: 4,
     season: 2025
+  }
+}
+
+/**
+ * Get processing status information for the current week
+ */
+export function getProcessingStatus(): {
+  week: number
+  season: number
+  shouldProcessDaily: boolean
+  shouldProcessTuesday: boolean
+  nextProcessingTime: string | null
+  gamesCompleted: number
+  totalGames: number
+} {
+  const { week, season } = getCurrentProcessingWeek()
+  const status = getCurrentWeekProcessingStatus(week, season)
+  
+  return {
+    week,
+    season,
+    shouldProcessDaily: shouldProcessDailyBetResults(),
+    shouldProcessTuesday: shouldProcessTuesdayBozoAnnotation(),
+    nextProcessingTime: status.nextProcessingTime,
+    gamesCompleted: status.gamesCompleted,
+    totalGames: status.totalGames
   }
 }
 
