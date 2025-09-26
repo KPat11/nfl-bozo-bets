@@ -6,7 +6,15 @@ import { X, Eye, EyeOff, User, Mail, Lock, Shield } from 'lucide-react'
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
-  onLogin: (user: {
+  onLogin?: (user: {
+    id: string
+    email: string
+    name: string
+    isAdmin: boolean
+    isBiggestBozo: boolean
+    teamId?: string
+  }, token: string) => void
+  onSuccess?: (user: {
     id: string
     email: string
     name: string
@@ -16,7 +24,7 @@ interface AuthModalProps {
   }, token: string) => void
 }
 
-export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onLogin, onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -58,7 +66,11 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
         const data = await response.json()
 
         if (data.success) {
-          onLogin(data.user, data.token)
+          if (onSuccess) {
+            onSuccess(data.user, data.token)
+          } else if (onLogin) {
+            onLogin(data.user, data.token)
+          }
           onClose()
         } else {
           setError(data.error || 'Registration failed')
@@ -76,7 +88,11 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
         const data = await response.json()
 
         if (data.success) {
-          onLogin(data.user, data.token)
+          if (onSuccess) {
+            onSuccess(data.user, data.token)
+          } else if (onLogin) {
+            onLogin(data.user, data.token)
+          }
           onClose()
         } else {
           setError(data.error || 'Login failed')
@@ -87,7 +103,7 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
     } finally {
       setLoading(false)
     }
-  }, [mode, formData, onLogin, onClose])
+  }, [mode, formData, onLogin, onSuccess, onClose])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
