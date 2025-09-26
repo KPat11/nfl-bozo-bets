@@ -607,9 +607,6 @@ export default function Home() {
                 </button>
               ) : (
                 <div className="flex items-center space-x-2">
-                  <span className="text-gray-300 text-sm">
-                    Welcome, {authUser?.name}
-                  </span>
                   <button 
                     onClick={handleLogout}
                     className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors shadow-lg text-sm sm:text-base"
@@ -617,6 +614,9 @@ export default function Home() {
                     <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
                     <span>Logout</span>
                   </button>
+                  <span className="text-gray-300 text-sm">
+                    Welcome, {authUser?.name}
+                  </span>
                 </div>
               )}
 

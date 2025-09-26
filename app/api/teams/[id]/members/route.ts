@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const addMemberToTeamSchema = z.object({
-  userId: z.string().min(1, 'User ID is required')
+  userId: z.string().min(1, 'User ID is required').optional()
 })
 
 const removeMemberFromTeamSchema = z.object({
@@ -20,19 +20,59 @@ export async function POST(
     const body = await request.json()
     const { userId } = addMemberToTeamSchema.parse(body)
 
-    // Check if team exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const team = await (prisma as any).team.findUnique({
-      where: { id: teamId }
+    // Get the authorization header for authentication
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    
+    // Validate the session to get the current user
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    }
+
+    const currentUser = session.user
+    const targetUserId = userId || currentUser.id // Use provided userId or current user
+
+    // Check if team exists and if it's locked
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: { users: true }
     })
 
     if (!team) {
       return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
 
+    // Check if team is locked (only for self-joining)
+    if (!userId && team.isLocked) {
+      return NextResponse.json({ 
+        error: 'Team is locked', 
+        message: 'This team is currently locked and not accepting new members.',
+        code: 'TEAM_LOCKED'
+      }, { status: 403 })
+    }
+
+    // Check if user is already a member
+    const isAlreadyMember = team.users.some(user => user.id === targetUserId)
+    if (isAlreadyMember) {
+      return NextResponse.json({ 
+        error: 'Already a member', 
+        message: 'You are already a member of this team.',
+        code: 'ALREADY_MEMBER'
+      }, { status: 409 })
+    }
+
     // Check if user exists
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: targetUserId }
     })
 
     if (!user) {
@@ -41,7 +81,7 @@ export async function POST(
 
     // Update user's teamId
     const updatedUser = await prisma.user.update({
-      where: { id: userId },
+      where: { id: targetUserId },
       data: { teamId },
       select: {
         id: true,

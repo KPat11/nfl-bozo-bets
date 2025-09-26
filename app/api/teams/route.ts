@@ -100,11 +100,32 @@ export async function POST(request: NextRequest) {
         color: color || '#3b82f6', // Default blue color
         lowestOdds: lowestOdds || -120, // Default lowest odds
         highestOdds: highestOdds || 130, // Default highest odds
-        isLocked: false
+        isLocked: false,
+        users: {
+          connect: {
+            id: session.user.id // Add the creator to the team
+          }
+        }
+      },
+      include: {
+        users: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     })
 
     console.log('✅ Team created successfully:', team.name)
+    
+    // Update the user's teamId to the newly created team
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { teamId: team.id }
+    })
+    
     return NextResponse.json(team, { status: 201 })
   } catch (error) {
     console.error('❌ Error creating team:', error)
@@ -113,8 +134,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json({ error: 'Team with this name already exists' }, { status: 409 })
+    if (error instanceof Error && (error.message.includes('Unique constraint') || error.message.includes('name'))) {
+      return NextResponse.json({ 
+        error: 'Team name already taken', 
+        message: 'A team with this name already exists. Please choose a different name.',
+        code: 'TEAM_NAME_EXISTS'
+      }, { status: 409 })
     }
 
     // Provide more detailed error information

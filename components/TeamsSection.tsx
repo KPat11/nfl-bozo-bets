@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Users, Plus, Trash2, Edit, CheckCircle, UserPlus, Lock, Unlock } from 'lucide-react'
 import CreateTeamModal from './CreateTeamModal'
 import EditTeamModal from './EditTeamModal'
+import JoinTeamModal from './JoinTeamModal'
 
 interface Team {
   id: string
@@ -33,6 +34,7 @@ interface TeamsSectionProps {
 export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectionProps) {
   const [teams, setTeams] = useState<Team[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingTeam, setEditingTeam] = useState<Team | null>(null)
   const [loading, setLoading] = useState(true)
@@ -95,6 +97,12 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
 
       if (!response.ok) {
         const errorData = await response.json()
+        
+        // Handle specific error cases
+        if (errorData.code === 'TEAM_NAME_EXISTS') {
+          throw new Error(errorData.message || 'Team name already taken')
+        }
+        
         throw new Error(errorData.error || 'Failed to create team')
       }
 
@@ -126,6 +134,47 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
     
     // Clear success message after 3 seconds
     setTimeout(() => setSuccess(''), 3000)
+  }
+
+  const handleJoinTeam = async (teamId: string) => {
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        setError('Authentication required')
+        return
+      }
+
+      const response = await fetch(`/api/teams/${teamId}/members`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to join team')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        setShowJoinModal(false)
+        setSuccess(`Successfully joined team "${data.team.name}"!`)
+        setError('')
+        onTeamCreated()
+        fetchTeams()
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccess(''), 3000)
+      } else {
+        throw new Error('Failed to join team')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join team')
+      setSuccess('')
+    }
   }
 
   const handleDeleteTeam = async (teamId: string, teamName: string) => {
@@ -258,13 +307,22 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
       <div className="px-6 py-4 border-b border-gray-700">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-white">Teams & Groups</h2>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            <Plus className="h-5 w-5" />
-            <span>Create Team</span>
-          </button>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setShowJoinModal(true)}
+              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <UserPlus className="h-5 w-5" />
+              <span>Join Team</span>
+            </button>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="h-5 w-5" />
+              <span>Create Team</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -396,6 +454,15 @@ export default function TeamsSection({ onTeamCreated, currentUser }: TeamsSectio
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onCreateTeam={handleCreateTeam}
+        />
+      )}
+
+      {/* Join Team Modal */}
+      {showJoinModal && (
+        <JoinTeamModal
+          isOpen={showJoinModal}
+          onClose={() => setShowJoinModal(false)}
+          onJoinTeam={handleJoinTeam}
         />
       )}
 

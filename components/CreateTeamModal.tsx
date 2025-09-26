@@ -59,6 +59,36 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
       return
     }
 
+    // Check for duplicate team name
+    try {
+      const token = localStorage.getItem('authToken')
+      if (token) {
+        const response = await fetch('/api/teams', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (response.ok) {
+          const teams = await response.json()
+          const existingTeam = teams.find((team: any) => 
+            team.name.toLowerCase() === formData.name.trim().toLowerCase()
+          )
+          
+          if (existingTeam) {
+            setError('⚠️ Team name already taken! Please choose a different name.')
+            setLoading(false)
+            return
+          }
+        }
+      }
+    } catch (err) {
+      // If we can't check for duplicates, continue with creation
+      // The server will catch duplicates anyway
+      console.warn('Could not check for duplicate team names:', err)
+    }
+
     try {
       await onCreateTeam({
         name: formData.name.trim(),
@@ -205,7 +235,11 @@ export default function CreateTeamModal({ isOpen, onClose, onCreateTeam }: Creat
           </div>
 
           {error && (
-            <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+            <div className={`text-sm border p-3 rounded-lg ${
+              error.includes('⚠️') 
+                ? 'text-orange-400 bg-orange-500/10 border-orange-500/20' 
+                : 'text-red-400 bg-red-500/10 border-red-500/20'
+            }`}>
               {error}
             </div>
           )}
