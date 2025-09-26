@@ -22,53 +22,13 @@ export interface NFLWeekSchedule {
   processingTime: Date // Last game time + 4 hours
 }
 
+import { NFL_SCHEDULE_2025 } from './nflSchedule2025'
+
 /**
- * NFL Schedule Data
- * TODO: Replace with actual NFL schedule data provided by user
+ * NFL Schedule Data - 2025 Season
+ * Based on official NFL schedule from https://operations.nfl.com/gameday/nfl-schedule/2025-nfl-schedule/
  */
-const NFL_SCHEDULE_DATA: NFLGame[] = [
-  // Week 4, 2025 - Example schedule (replace with actual data)
-  {
-    id: 'week4-thursday',
-    week: 4,
-    season: 2025,
-    homeTeam: 'Bills',
-    awayTeam: 'Dolphins',
-    gameTime: new Date('2025-01-16T20:15:00Z'), // Thursday 8:15 PM ET
-    gameType: 'THURSDAY',
-    isCompleted: false
-  },
-  {
-    id: 'week4-sunday-early',
-    week: 4,
-    season: 2025,
-    homeTeam: 'Cardinals',
-    awayTeam: 'Rams',
-    gameTime: new Date('2025-01-19T18:00:00Z'), // Sunday 1:00 PM ET
-    gameType: 'SUNDAY',
-    isCompleted: false
-  },
-  {
-    id: 'week4-sunday-late',
-    week: 4,
-    season: 2025,
-    homeTeam: 'Seahawks',
-    awayTeam: '49ers',
-    gameTime: new Date('2025-01-19T21:25:00Z'), // Sunday 4:25 PM ET
-    gameType: 'SUNDAY',
-    isCompleted: false
-  },
-  {
-    id: 'week4-monday',
-    week: 4,
-    season: 2025,
-    homeTeam: 'Chiefs',
-    awayTeam: 'Raiders',
-    gameTime: new Date('2025-01-20T01:20:00Z'), // Monday 8:20 PM ET
-    gameType: 'MONDAY',
-    isCompleted: false
-  }
-]
+const NFL_SCHEDULE_DATA: NFLGame[] = NFL_SCHEDULE_2025
 
 /**
  * Get the schedule for a specific week
