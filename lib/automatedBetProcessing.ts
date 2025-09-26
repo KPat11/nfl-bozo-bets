@@ -80,8 +80,7 @@ export async function processDailyBetResults(week: number, season: number): Prom
           await prisma.weeklyBet.update({
             where: { id: bet.id },
             data: { 
-              status: betResult.status,
-              result: betResult.result
+              status: betResult.status
             }
           })
 
@@ -127,7 +126,6 @@ export async function processDailyBetResults(week: number, season: number): Prom
  */
 async function processIndividualBet(bet: any, week: number, season: number): Promise<{
   status: 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED'
-  result?: string
 } | null> {
   // For now, we'll use mock logic since we don't have real game data
   // In a real implementation, you would:
@@ -142,11 +140,11 @@ async function processIndividualBet(bet: any, week: number, season: number): Pro
   if (random < 0.05) {
     return { status: 'CANCELLED' } // 5% chance of cancellation
   } else if (random < 0.1) {
-    return { status: 'PUSH', result: 'push' } // 5% chance of push
+    return { status: 'PUSH' } // 5% chance of push
   } else if (random < 0.6) {
-    return { status: 'HIT', result: 'over' } // 50% chance of hit
+    return { status: 'HIT' } // 50% chance of hit
   } else {
-    return { status: 'BOZO', result: 'under' } // 40% chance of bozo
+    return { status: 'BOZO' } // 40% chance of bozo
   }
 }
 
