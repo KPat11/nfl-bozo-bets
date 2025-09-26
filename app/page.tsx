@@ -94,6 +94,7 @@ export default function Home() {
     teamId?: string
   } | null>(null)
   const [authToken, setAuthToken] = useState<string | null>(null)
+  const [justLoggedIn, setJustLoggedIn] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [showTeamManagementModal, setShowTeamManagementModal] = useState(false)
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
@@ -205,6 +206,7 @@ export default function Home() {
   }, token: string) => {
     console.log('🔐 Login process started:', { userName: user.name, tokenLength: token.length })
     
+    setJustLoggedIn(true) // Prevent sync from interfering
     setAuthUser(user)
     setAuthToken(token)
     setIsAuthenticated(true)
@@ -217,6 +219,11 @@ export default function Home() {
       user: user.name,
       tokenStored: !!localStorage.getItem('authToken')
     })
+    
+    // Clear the justLoggedIn flag after a delay
+    setTimeout(() => {
+      setJustLoggedIn(false)
+    }, 3000) // 3 second grace period
     
     // Check if this is a first-time user (no team assigned)
     if (!user.teamId) {
@@ -315,7 +322,12 @@ export default function Home() {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'authToken' || e.key === 'authUser') {
         console.log('🔄 Auth state sync: Storage changed, revalidating auth')
-        checkAuthStatus()
+        // Don't sync if we just logged in (prevent race condition)
+        if (!justLoggedIn) {
+          checkAuthStatus()
+        } else {
+          console.log('🔄 Auth state sync: Skipping - just logged in')
+        }
       }
     }
     
@@ -324,6 +336,12 @@ export default function Home() {
       if (!document.hidden) {
         // Add a small delay to prevent race conditions with login
         setTimeout(() => {
+          // Don't sync if we just logged in (prevent race condition)
+          if (justLoggedIn) {
+            console.log('🔄 Auth state sync: Skipping visibility check - just logged in')
+            return
+          }
+          
           const token = localStorage.getItem('authToken')
           const user = localStorage.getItem('authUser')
           
@@ -346,7 +364,7 @@ export default function Home() {
       window.removeEventListener('storage', handleStorageChange)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [fetchUsers, checkForBiggestBozo, isAuthenticated]) // Include dependencies to fix ESLint warnings
+  }, [fetchUsers, checkForBiggestBozo, isAuthenticated, justLoggedIn]) // Include dependencies to fix ESLint warnings
 
   // Update current week periodically
   useEffect(() => {
@@ -532,7 +550,7 @@ export default function Home() {
               NFL Bozo Bets
             </h1>
             <p className="text-gray-300 text-lg">
-              Join the ultimate NFL betting experience
+              Track your NFL picks and compete with friends
             </p>
           </div>
 
