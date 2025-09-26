@@ -652,12 +652,14 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                 className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors relative z-[10002]"
               >
                 <option value="">Select a team/group</option>
-                {console.log('🔍 SubmitBetModal - Rendering teams dropdown:', { teams, count: teams.length })}
-                {teams.map(team => (
-                  <option key={team.id} value={team.id}>
-                    {team.name} ({team.users.length} members)
-                  </option>
-                ))}
+                {(() => {
+                  console.log('🔍 SubmitBetModal - Rendering teams dropdown:', { teams, count: teams.length })
+                  return teams.map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.name} ({team.users.length} members)
+                    </option>
+                  ))
+                })()}
               </select>
             </div>
           </div>
