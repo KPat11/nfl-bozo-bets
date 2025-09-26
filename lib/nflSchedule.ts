@@ -10,7 +10,7 @@ export interface NFLGame {
   homeTeam: string
   awayTeam: string
   gameTime: Date
-  gameType: 'THURSDAY' | 'SUNDAY' | 'MONDAY' | 'SATURDAY'
+  gameType: 'THURSDAY' | 'FRIDAY' | 'SUNDAY' | 'MONDAY' | 'SATURDAY'
   isCompleted: boolean
 }
 
