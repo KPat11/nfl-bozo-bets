@@ -214,6 +214,14 @@ export default function Home() {
     if (!user.teamId) {
       setShowWelcomeModal(true)
     }
+    
+    // Show walkthrough for all users after login (unless they've seen it before)
+    if (!localStorage.getItem('walkthroughShown')) {
+      setTimeout(() => {
+        setShowUserWalkthrough(true)
+        localStorage.setItem('walkthroughShown', 'true')
+      }, 1500) // Slightly longer delay to let welcome modal show first if needed
+    }
   }
 
   const handleLogout = async () => {
@@ -251,8 +259,8 @@ export default function Home() {
           setAuthToken(token)
           setIsAuthenticated(true)
           
-          // Check if this is a new user (no teamId) and show walkthrough
-          if (!data.user.teamId && !localStorage.getItem('walkthroughShown')) {
+          // Show walkthrough for all users after sign-in (unless they've seen it before)
+          if (!localStorage.getItem('walkthroughShown')) {
             setTimeout(() => {
               setShowUserWalkthrough(true)
               localStorage.setItem('walkthroughShown', 'true')

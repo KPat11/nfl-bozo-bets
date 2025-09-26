@@ -68,6 +68,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Get the authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token provided' }, { status: 401 })
+    }
+
+    const token = authHeader.substring(7)
+    
+    // Validate the session to get the current user
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    }
+
     console.log('🔍 Creating team...')
     
     const body = await request.json()
