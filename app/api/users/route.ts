@@ -6,8 +6,7 @@ import { z } from 'zod'
 
 const createUserSchema = z.object({
   // email: z.string().email('Invalid email address').toLowerCase().trim(), // Commented out for now
-  name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim(),
-  teamId: z.string().optional()
+  name: z.string().min(1, 'Name is required').max(100, 'Name too long').trim()
 })
 
 export async function GET(request: NextRequest) {
@@ -105,25 +104,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('Creating user with data:', body)
     
-    const { name, teamId } = createUserSchema.parse(body)
+    const { name } = createUserSchema.parse(body)
     // Generate a default email since email field is commented out
     const email = `${name.toLowerCase().replace(/\s+/g, '.')}@nflbozobets.local`
-    console.log('Parsed user data:', { email, name, teamId })
-
-    // Validate team exists if provided
-    let team = null
-    if (teamId) {
-      try {
-        team = await prisma.team.findUnique({
-          where: { id: teamId }
-        })
-        if (!team) {
-          return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-        }
-      } catch (error) {
-        console.log('Team validation failed, continuing without team:', error)
-      }
-    }
+    console.log('Parsed user data:', { email, name })
 
     console.log('Creating user in database...')
     const userData = {
@@ -135,8 +119,7 @@ export async function POST(request: NextRequest) {
       totalHits: 0,
       totalFavMisses: 0,
       isBiggestBozo: false,
-      isAdmin: false,
-      teamId: teamId || undefined
+      isAdmin: false
     }
 
     const user = await prisma.user.create({
@@ -144,27 +127,14 @@ export async function POST(request: NextRequest) {
     })
     console.log('User created successfully:', user)
 
-    // Try to add team data if available
-    let userWithTeam: any = { ...user, team: null }
-    if (teamId && team) {
-      userWithTeam = {
-        ...user,
-        team: {
-          id: team.id,
-          name: team.name,
-          color: team.color
-        }
-      }
-    }
-
     // TODO: Email functionality commented out for future iteration
     // Send welcome email (async, don't wait for it)
     // sendWelcomeEmail(email, name, team?.name).catch(error => {
     //   console.error('Failed to send welcome email:', error)
     // })
 
-    console.log('Returning user with team data:', userWithTeam)
-    return NextResponse.json(userWithTeam, { status: 201 })
+    console.log('Returning user:', user)
+    return NextResponse.json(user, { status: 201 })
   } catch (error) {
     console.error('Error in POST /api/users:', error)
     

@@ -11,7 +11,6 @@ export interface AuthUser {
   name: string
   isAdmin: boolean
   isBiggestBozo: boolean
-  teamId?: string
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -29,8 +28,7 @@ export function generateToken(user: AuthUser): string {
       email: user.email, 
       name: user.name,
       isAdmin: user.isAdmin,
-      isBiggestBozo: user.isBiggestBozo,
-      teamId: user.teamId
+      isBiggestBozo: user.isBiggestBozo
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
@@ -45,15 +43,13 @@ export function verifyToken(token: string): AuthUser | null {
       name: string
       isAdmin: boolean
       isBiggestBozo: boolean
-      teamId?: string
     }
     return {
       id: decoded.id,
       email: decoded.email,
       name: decoded.name,
       isAdmin: decoded.isAdmin,
-      isBiggestBozo: decoded.isBiggestBozo,
-      teamId: decoded.teamId
+      isBiggestBozo: decoded.isBiggestBozo
     }
   } catch {
     return null
@@ -73,8 +69,7 @@ export async function createSession(userId: string): Promise<string> {
     email: user.email, 
     name: user.name,
     isAdmin: user.isAdmin, 
-    isBiggestBozo: user.isBiggestBozo,
-    teamId: user.teamId || undefined
+    isBiggestBozo: user.isBiggestBozo
   })
   
   const expiresAt = new Date()
@@ -113,8 +108,7 @@ export async function validateSession(token: string): Promise<AuthUser | null> {
       email: user.email,
       name: user.name,
       isAdmin: user.isAdmin,
-      isBiggestBozo: user.isBiggestBozo,
-      teamId: user.teamId || undefined
+      isBiggestBozo: user.isBiggestBozo
     }
   } catch {
     return null

@@ -7,14 +7,13 @@ import { z } from 'zod'
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email format'),
-  password: z.string().min(1, 'Password is required'),
-  teamId: z.string().optional()
+  password: z.string().min(1, 'Password is required')
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password, teamId } = registerSchema.parse(body)
+    const { name, email, password } = registerSchema.parse(body)
 
     // Validate password strength
     const passwordValidation = validatePassword(password)
@@ -50,8 +49,7 @@ export async function POST(request: NextRequest) {
         totalHits: 0,
         totalFavMisses: 0,
         isAdmin: false,
-        isBiggestBozo: false,
-        teamId: teamId || null
+        isBiggestBozo: false
       }
     })
 
@@ -76,7 +74,6 @@ export async function POST(request: NextRequest) {
         name: user.name,
         isAdmin: user.isAdmin,
         isBiggestBozo: user.isBiggestBozo,
-        teamId: user.teamId,
         managementWeek: user.managementWeek,
         managementSeason: user.managementSeason
       },
