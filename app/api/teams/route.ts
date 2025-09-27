@@ -34,8 +34,7 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Fetching teams for user:', { 
       userId: currentUser.id, 
-      userName: currentUser.name,
-      userTeamId: currentUser.teamId 
+      userName: currentUser.name
     })
     
     // Fetch teams the user belongs to through team memberships
