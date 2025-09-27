@@ -371,6 +371,12 @@ export default function Home() {
       isCheckingAuth
     })
     
+    // If already authenticated and have valid token, skip check
+    if (isAuthenticated && token && user) {
+      console.log('🔍 Already authenticated, skipping auth check')
+      return
+    }
+    
     setIsCheckingAuth(true)
     
     // If we have a token and user in localStorage, validate it
