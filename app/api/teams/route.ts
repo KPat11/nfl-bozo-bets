@@ -24,55 +24,6 @@ export async function GET(request: NextRequest) {
     // TODO: Fix database connectivity issues
     console.log('⚠️ Returning empty teams array due to database issues')
     return NextResponse.json([])
-
-    console.log('🔍 Fetching teams for user:', { 
-      userId: currentUser.id, 
-      userName: currentUser.name
-    })
-    
-    // Fetch teams the user belongs to through team memberships
-    const teams = await prisma.team.findMany({
-      where: {
-        memberships: {
-          some: {
-            userId: currentUser.id
-          }
-        }
-      },
-      include: {
-        memberships: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
-
-    // Transform the data to match the expected format
-    const teamsWithUsers = teams.map(team => ({
-      ...team,
-      users: team.memberships.map(membership => membership.user)
-    }))
-
-    console.log('✅ Teams fetched successfully:', { 
-      count: teamsWithUsers.length, 
-      teams: teamsWithUsers.map(t => ({ 
-        id: t.id, 
-        name: t.name, 
-        userCount: t.users.length,
-        userIds: t.users.map(u => u.id)
-      }))
-    })
-    return NextResponse.json(teamsWithUsers)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
     // Return empty array instead of error to prevent frontend crashes
