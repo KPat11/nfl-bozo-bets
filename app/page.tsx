@@ -338,7 +338,8 @@ export default function Home() {
       token: token ? 'Present' : 'Missing', 
       tokenLength: token?.length || 0,
       user: user ? 'Present' : 'Missing',
-      currentAuthState: isAuthenticated
+      currentAuthState: isAuthenticated,
+      localStorageKeys: Object.keys(localStorage)
     })
     
     // If we have a token and user in localStorage, validate it
@@ -972,7 +973,9 @@ export default function Home() {
             {console.log('🔍 Teams Tab Debug:', { 
               isAuthenticated, 
               authUser: authUser?.name || 'None',
-              token: authToken ? 'Present' : 'Missing'
+              token: authToken ? 'Present' : 'Missing',
+              currentUser: currentUser?.name || 'None',
+              localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing'
             })}
             <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
           </>
