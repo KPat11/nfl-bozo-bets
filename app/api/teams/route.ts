@@ -49,9 +49,10 @@ export async function GET(request: NextRequest) {
               }
             }
           },
-          {
+          // Only include teamId condition if it's not null
+          ...(currentUser.teamId ? [{
             id: currentUser.teamId // Teams where user's teamId matches team id
-          }
+          }] : [])
         ]
       },
       include: {
