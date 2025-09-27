@@ -142,12 +142,39 @@ export default function Home() {
         const authData = await authResponse.json()
         setAuthUser(authData.user)
         
-        // Set currentUser to the authenticated user
-        setCurrentUser(authData.user)
+        // Create a proper User object with all required properties
+        const userObject: User = {
+          id: authData.user.id,
+          name: authData.user.name,
+          email: authData.user.email,
+          phone: '',
+          totalBozos: 0,
+          totalHits: 0,
+          isBiggestBozo: authData.user.isBiggestBozo,
+          isAdmin: authData.user.isAdmin,
+          managementWeek: null,
+          managementSeason: null,
+          weeklyBets: []
+        }
+        setCurrentUser(userObject)
       } else {
         // If auth fails, ensure currentUser is set from existing authUser
         if (authUser && !currentUser) {
-          setCurrentUser(authUser)
+          // Create a proper User object with all required properties
+          const userObject: User = {
+            id: authUser.id,
+            name: authUser.name,
+            email: authUser.email,
+            phone: '',
+            totalBozos: 0,
+            totalHits: 0,
+            isBiggestBozo: authUser.isBiggestBozo,
+            isAdmin: authUser.isAdmin,
+            managementWeek: null,
+            managementSeason: null,
+            weeklyBets: []
+          }
+          setCurrentUser(userObject)
         }
       }
 
@@ -370,8 +397,21 @@ export default function Home() {
           // Update with fresh data from server
           setAuthUser(data.user)
           
-          // Set currentUser immediately to the authenticated user
-          setCurrentUser(data.user)
+          // Create a proper User object with all required properties
+          const userObject: User = {
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            phone: '',
+            totalBozos: 0,
+            totalHits: 0,
+            isBiggestBozo: data.user.isBiggestBozo,
+            isAdmin: data.user.isAdmin,
+            managementWeek: null,
+            managementSeason: null,
+            weeklyBets: []
+          }
+          setCurrentUser(userObject)
           
           // Refresh data after successful authentication
           await refreshAllData()
