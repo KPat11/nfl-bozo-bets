@@ -336,14 +336,8 @@ export default function Home() {
       currentAuthState: isAuthenticated
     })
     
-    // If we're already authenticated and have valid data, don't re-validate
-    if (isAuthenticated && token && user) {
-      console.log('🔍 Already authenticated, skipping check')
-      return
-    }
-    
-    // Only check authentication if we're not already authenticated
-    if (!isAuthenticated && token && user) {
+    // If we have a token and user in localStorage, validate it
+    if (token && user) {
       try {
         const response = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -355,15 +349,17 @@ export default function Home() {
           setAuthToken(token)
           setIsAuthenticated(true)
           
-          // Refresh all data after successful authentication
-          await refreshAllData()
-          
-          // Show walkthrough for all users after sign-in (unless they've seen it before)
-          if (!localStorage.getItem('walkthroughShown')) {
-            setTimeout(() => {
-              setShowUserWalkthrough(true)
-              localStorage.setItem('walkthroughShown', 'true')
-            }, 1000) // Small delay to let the UI settle
+          // Only refresh data if we weren't already authenticated
+          if (!isAuthenticated) {
+            await refreshAllData()
+            
+            // Show walkthrough for all users after sign-in (unless they've seen it before)
+            if (!localStorage.getItem('walkthroughShown')) {
+              setTimeout(() => {
+                setShowUserWalkthrough(true)
+                localStorage.setItem('walkthroughShown', 'true')
+              }, 1000) // Small delay to let the UI settle
+            }
           }
         } else {
           console.log('❌ Token validation failed, clearing storage')
@@ -382,7 +378,7 @@ export default function Home() {
         setAuthToken(null)
         setIsAuthenticated(false)
       }
-    } else if (!isAuthenticated) {
+    } else {
       console.log('❌ No token or user found, setting unauthenticated')
       setAuthUser(null)
       setAuthToken(null)
