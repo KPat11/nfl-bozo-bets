@@ -45,9 +45,10 @@ interface SubmitBetModalProps {
   season: number
   currentUser?: User
   refreshTrigger?: number // Add this to trigger team refresh
+  authToken?: string | null // Add auth token prop
 }
 
-export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser, refreshTrigger }: SubmitBetModalProps) {
+export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, season, currentUser, refreshTrigger, authToken }: SubmitBetModalProps) {
   const [users, setUsers] = useState<User[]>([])
   const [teams, setTeams] = useState<Team[]>([])
   const [fanduelProps, setFanduelProps] = useState<FanDuelProp[]>([])
@@ -91,7 +92,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   const fetchUsers = useCallback(async () => {
     try {
-      const token = localStorage.getItem('authToken')
+      const token = authToken || localStorage.getItem('authToken')
       if (!token) {
         console.log('No auth token found for users fetch')
         setUsers([])
@@ -116,12 +117,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
     }
-  }, [])
+  }, [authToken])
 
   const fetchTeams = useCallback(async () => {
     console.log('🔍 SubmitBetModal - fetchTeams called')
     try {
-      const token = localStorage.getItem('authToken')
+      const token = authToken || localStorage.getItem('authToken')
       console.log('🔍 SubmitBetModal - Token check:', { 
         hasToken: !!token, 
         tokenLength: token?.length || 0,
@@ -167,7 +168,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       console.error('❌ Error fetching teams:', error)
       setTeams([]) // Set empty array on error
     }
-  }, [])
+  }, [authToken])
 
 
   const fetchFanDuelProps = useCallback(async () => {
@@ -354,11 +355,20 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       week, 
       season, 
       refreshTrigger,
-      currentUser: currentUser?.name || 'none'
+      currentUser: currentUser?.name || 'none',
+      authToken: authToken ? 'Present' : 'Missing'
     })
     
     if (isOpen) {
       console.log('🔍 SubmitBetModal - Modal is open, fetching data...')
+      
+      // Check if user is authenticated before fetching data
+      const token = authToken || localStorage.getItem('authToken')
+      if (!token) {
+        console.log('❌ SubmitBetModal - No auth token, not fetching data')
+        setError('Please log in to submit bets')
+        return
+      }
       
       // Reset form when modal opens
       setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '', betType: 'BOZO' })
@@ -401,7 +411,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         setOddsUpdateInterval(null)
       }
     }
-  }, [isOpen, week, season, refreshTrigger]) // Added refreshTrigger to refetch teams when user joins a team
+  }, [isOpen, week, season, refreshTrigger, authToken]) // Added authToken to dependencies
 
   // Keyboard handlers
   useEffect(() => {

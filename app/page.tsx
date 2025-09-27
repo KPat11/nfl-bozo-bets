@@ -342,7 +342,8 @@ export default function Home() {
       return
     }
     
-    if (token && user) {
+    // Only check authentication if we're not already authenticated
+    if (!isAuthenticated && token && user) {
       try {
         const response = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -381,7 +382,7 @@ export default function Home() {
         setAuthToken(null)
         setIsAuthenticated(false)
       }
-    } else {
+    } else if (!isAuthenticated) {
       console.log('❌ No token or user found, setting unauthenticated')
       setAuthUser(null)
       setAuthToken(null)
@@ -696,9 +697,18 @@ export default function Home() {
                     authUser: authUser?.name || 'none',
                     authToken: authToken ? 'Present' : 'Missing'
                   })
-                  setShowSubmitBetModal(true)
+                  if (isAuthenticated) {
+                    setShowSubmitBetModal(true)
+                  } else {
+                    setShowAuthModal(true)
+                  }
                 }}
-                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg text-sm sm:text-base font-semibold border border-blue-300/30"
+                disabled={!isAuthenticated}
+                className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 transform shadow-lg text-sm sm:text-base font-semibold border ${
+                  isAuthenticated 
+                    ? 'bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white hover:scale-105 border-blue-300/30' 
+                    : 'bg-gray-600 text-gray-400 cursor-not-allowed border-gray-600'
+                }`}
               >
                 <Target className="h-4 w-4 sm:h-5 sm:w-5" />
                 <span>Submit Bet</span>
@@ -1514,6 +1524,7 @@ export default function Home() {
         season={currentSeason}
         currentUser={currentUser || undefined}
         refreshTrigger={submitBetRefreshTrigger}
+        authToken={authToken}
       />
       
       <EditBetModal
