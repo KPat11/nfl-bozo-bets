@@ -20,10 +20,78 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.substring(7)
     
-    // For now, return empty teams array to prevent database errors
-    // TODO: Fix database connectivity issues
-    console.log('⚠️ Returning empty teams array due to database issues')
-    return NextResponse.json([])
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      console.log('✅ Database connection successful')
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError)
+      return NextResponse.json({ 
+        error: 'Database connection failed',
+        details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      }, { status: 500 })
+    }
+    
+    // Validate the session to get the current user
+    const session = await prisma.session.findUnique({
+      where: { token },
+      include: { user: true }
+    })
+
+    if (!session || session.expiresAt < new Date()) {
+      console.log('❌ Invalid or expired token')
+      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    }
+
+    const currentUser = session.user
+    console.log('🔍 Fetching teams for user:', { 
+      userId: currentUser.id, 
+      userName: currentUser.name
+    })
+    
+    // Fetch teams the user belongs to through team memberships
+    const teams = await prisma.team.findMany({
+      where: {
+        memberships: {
+          some: {
+            userId: currentUser.id
+          }
+        }
+      },
+      include: {
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    // Transform the data to match the expected format
+    const teamsWithUsers = teams.map(team => ({
+      ...team,
+      users: team.memberships.map(membership => membership.user)
+    }))
+
+    console.log('✅ Teams fetched successfully:', { 
+      count: teamsWithUsers.length, 
+      teams: teamsWithUsers.map(t => ({ 
+        id: t.id, 
+        name: t.name, 
+        userCount: t.users.length,
+        userIds: t.users.map(u => u.id)
+      }))
+    })
+    return NextResponse.json(teamsWithUsers)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
     // Return empty array instead of error to prevent frontend crashes
