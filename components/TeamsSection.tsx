@@ -80,8 +80,8 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
       ])
       
       // Mark user's teams as members and available teams as non-members
-      const userTeamsWithMembership = userTeams.map(team => ({ ...team, isMember: true }))
-      const availableTeamsWithMembership = availableTeamsData.teams.map(team => ({ ...team, isMember: false }))
+      const userTeamsWithMembership = userTeams.map((team: Team) => ({ ...team, isMember: true }))
+      const availableTeamsWithMembership = availableTeamsData.teams.map((team: Team) => ({ ...team, isMember: false }))
       
       // Combine user's teams and available teams
       const allTeams = [...userTeamsWithMembership, ...availableTeamsWithMembership]
