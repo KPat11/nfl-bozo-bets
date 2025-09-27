@@ -173,7 +173,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       // Debug: Check if current user is in any teams
       if (currentUser?.id && Array.isArray(data)) {
         const userTeams = data.filter(team => 
-          team.users?.some(user => user.id === currentUser.id)
+          team.users?.some((user: any) => user.id === currentUser.id)
         )
         console.log('🔍 SubmitBetModal - User teams check:', {
           currentUserId: currentUser.id,
