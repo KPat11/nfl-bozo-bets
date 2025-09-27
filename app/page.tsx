@@ -131,6 +131,7 @@ export default function Home() {
         const usersData = await usersResponse.json()
         const userData = Array.isArray(usersData) ? usersData : []
         setUsers(userData)
+        // Note: currentUser should only be set from authentication, not from users list
       }
 
       // Refresh auth user data
@@ -142,40 +143,21 @@ export default function Home() {
         const authData = await authResponse.json()
         setAuthUser(authData.user)
         
-          // Create a proper User object with all required properties
-          const userObject: User = {
-            id: authData.user.id,
-            name: authData.user.name,
-            email: authData.user.email,
-            phone: '',
-            totalBozos: 0,
-            totalHits: 0,
-            isBiggestBozo: authData.user.isBiggestBozo,
-            isAdmin: authData.user.isAdmin,
-            managementWeek: undefined,
-            managementSeason: undefined,
-            weeklyBets: []
-          }
-        setCurrentUser(userObject)
-      } else {
-        // If auth fails, ensure currentUser is set from existing authUser
-        if (authUser && !currentUser) {
-          // Create a proper User object with all required properties
-          const userObject: User = {
-            id: authUser.id,
-            name: authUser.name,
-            email: authUser.email,
-            phone: '',
-            totalBozos: 0,
-            totalHits: 0,
-            isBiggestBozo: authUser.isBiggestBozo,
-            isAdmin: authUser.isAdmin,
-            managementWeek: undefined,
-            managementSeason: undefined,
-            weeklyBets: []
-          }
-          setCurrentUser(userObject)
+        // Set currentUser from authenticated user data
+        const userObject: User = {
+          id: authData.user.id,
+          name: authData.user.name,
+          email: authData.user.email,
+          phone: '',
+          totalBozos: 0,
+          totalHits: 0,
+          isBiggestBozo: authData.user.isBiggestBozo,
+          isAdmin: authData.user.isAdmin,
+          managementWeek: undefined,
+          managementSeason: undefined,
+          weeklyBets: []
         }
+        setCurrentUser(userObject)
       }
 
       // Trigger submit bet modal refresh
@@ -212,20 +194,13 @@ export default function Home() {
       const userData = Array.isArray(data) ? data : []
       setUsers(userData)
       
-      // Only set currentUser if we don't already have one (preserve authenticated user)
-      if (userData.length > 0 && !currentUser) {
-        console.log('Setting current user to:', userData[0])
-        setCurrentUser(userData[0])
-      } else if (userData.length === 0) {
-        console.log('No users found, but preserving currentUser if authenticated')
-        // Don't clear currentUser if user is authenticated
-      }
+      // Note: currentUser should only be set from authentication, not from users list
     } catch (error) {
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
-      // Don't clear currentUser on error if user is authenticated
+      // Don't clear currentUser on error - it should only come from authentication
     }
-  }, [currentUser])
+  }, [])
 
   const checkForBiggestBozo = useCallback(async () => {
     try {
@@ -317,6 +292,22 @@ export default function Home() {
     localStorage.setItem('authUser', JSON.stringify(user))
     setShowAuthModal(false)
     
+    // Set currentUser from authenticated user data
+    const userObject: User = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: '',
+      totalBozos: 0,
+      totalHits: 0,
+      isBiggestBozo: user.isBiggestBozo,
+      isAdmin: user.isAdmin,
+      managementWeek: undefined,
+      managementSeason: undefined,
+      weeklyBets: []
+    }
+    setCurrentUser(userObject)
+    
     console.log('🔐 Login process completed:', { 
       isAuthenticated: true, 
       user: user.name,
@@ -367,16 +358,8 @@ export default function Home() {
       token: token ? 'Present' : 'Missing', 
       tokenLength: token?.length || 0,
       user: user ? 'Present' : 'Missing',
-      currentAuthState: isAuthenticated,
-      localStorageKeys: Object.keys(localStorage)
+      currentAuthState: isAuthenticated
     })
-    
-    // Always clear authentication state first to ensure clean state
-    setAuthUser(null)
-    setAuthToken(null)
-    setIsAuthenticated(false)
-    setCurrentUser(null)
-    setUsers([])
     
     // If we have a token and user in localStorage, validate it
     if (token && user) {
@@ -397,7 +380,7 @@ export default function Home() {
           // Update with fresh data from server
           setAuthUser(data.user)
           
-          // Create a proper User object with all required properties
+          // Set currentUser from authenticated user data
           const userObject: User = {
             id: data.user.id,
             name: data.user.name,
@@ -413,15 +396,17 @@ export default function Home() {
           }
           setCurrentUser(userObject)
           
-          // Refresh data after successful authentication
-          await refreshAllData()
-          
-          // Show walkthrough for all users after sign-in (unless they've seen it before)
-          if (!localStorage.getItem('walkthroughShown')) {
-            setTimeout(() => {
-              setShowUserWalkthrough(true)
-              localStorage.setItem('walkthroughShown', 'true')
-            }, 1000) // Small delay to let the UI settle
+          // Only refresh data if we weren't already authenticated
+          if (!isAuthenticated) {
+            await refreshAllData()
+            
+            // Show walkthrough for all users after sign-in (unless they've seen it before)
+            if (!localStorage.getItem('walkthroughShown')) {
+              setTimeout(() => {
+                setShowUserWalkthrough(true)
+                localStorage.setItem('walkthroughShown', 'true')
+              }, 1000) // Small delay to let the UI settle
+            }
           }
         } else {
           console.log('❌ Token validation failed, clearing storage')
@@ -445,38 +430,12 @@ export default function Home() {
       setAuthUser(null)
       setAuthToken(null)
       setIsAuthenticated(false)
-      setCurrentUser(null)
-      setUsers([])
     }
   }
 
   useEffect(() => {
-    // Check auth status on mount and also set up a listener for storage changes
+    // Only check auth status once on mount
     checkAuthStatus()
-    
-    // Listen for storage changes (e.g., from other tabs)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'authToken' || e.key === 'authUser') {
-        console.log('🔄 Storage changed, rechecking auth status')
-        checkAuthStatus()
-      }
-    }
-    
-    // Also listen for visibility changes to sync auth state
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('🔄 Page became visible, rechecking auth status')
-        checkAuthStatus()
-      }
-    }
-    
-    window.addEventListener('storage', handleStorageChange)
-    document.addEventListener('visibilitychange', handleVisibilityChange)
-    
-    return () => {
-      window.removeEventListener('storage', handleStorageChange)
-      document.removeEventListener('visibilitychange', handleVisibilityChange)
-    }
   }, []) // Empty dependency array - only run once on mount
 
   useEffect(() => {
@@ -1044,33 +1003,14 @@ export default function Home() {
         </>
         )}
 
-        {activeTab === 'teams' && (
+        {activeTab === 'teams' && isAuthenticated && (
           <>
             {console.log('🔍 Teams Tab Debug:', { 
               isAuthenticated, 
               authUser: authUser?.name || 'None',
-              token: authToken ? 'Present' : 'Missing',
-              currentUser: currentUser?.name || 'None',
-              localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing',
-              shouldRenderTeams: isAuthenticated && authToken && currentUser
+              token: authToken ? 'Present' : 'Missing'
             })}
-            {isAuthenticated && authToken && currentUser ? (
-              <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
-            ) : (
-              <div className="bg-gray-800 rounded-lg p-8 text-center">
-                <div className="text-6xl mb-4">🔐</div>
-                <h3 className="text-2xl font-bold text-gray-300 mb-4">Authentication Required</h3>
-                <p className="text-gray-400 mb-6">
-                  Please log in to view and manage teams.
-                </p>
-                <button 
-                  onClick={() => setShowAuthModal(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-                >
-                  Sign In / Sign Up
-                </button>
-              </div>
-            )}
+            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} authToken={authToken} />
           </>
         )}
 
