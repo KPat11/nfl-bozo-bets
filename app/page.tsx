@@ -65,7 +65,7 @@ export default function Home() {
     return weekInfo ? weekInfo.week : 4 // Default to week 4 if calculation fails
   })
   const [currentSeason] = useState(2025)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [showSubmitBetModal, setShowSubmitBetModal] = useState(false)
   const [submitBetRefreshTrigger, setSubmitBetRefreshTrigger] = useState(0)
   const [showEditBetModal, setShowEditBetModal] = useState(false)
@@ -188,8 +188,6 @@ export default function Home() {
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
       setCurrentUser(null)
-    } finally {
-      setLoading(false)
     }
   }, [])
 
@@ -339,15 +337,21 @@ export default function Home() {
     // If we have a token and user in localStorage, validate it
     if (token && user) {
       try {
+        // Parse the stored user data first to set state immediately
+        const parsedUser = JSON.parse(user)
+        setAuthUser(parsedUser)
+        setAuthToken(token)
+        setIsAuthenticated(true)
+        
+        // Then validate the token in the background
         const response = await fetch('/api/auth/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         })
         
         if (response.ok) {
           const data = await response.json()
+          // Update with fresh data from server
           setAuthUser(data.user)
-          setAuthToken(token)
-          setIsAuthenticated(true)
           
           // Only refresh data if we weren't already authenticated
           if (!isAuthenticated) {
@@ -564,16 +568,6 @@ export default function Home() {
 
   // Removed unused functions - they're not needed in the main component
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
-          <p className="text-gray-400">Loading NFL Bozo Bets...</p>
-        </div>
-      </div>
-    )
-  }
 
   // Auth Gate - Show login screen if not authenticated
   if (!isAuthenticated) {
