@@ -32,16 +32,27 @@ export async function GET(request: NextRequest) {
 
     const currentUser = session.user
 
-    console.log('🔍 Fetching teams...')
+    console.log('🔍 Fetching teams for user:', { 
+      userId: currentUser.id, 
+      userName: currentUser.name,
+      userTeamId: currentUser.teamId 
+    })
     
-    // Only fetch teams the user belongs to
+    // Fetch teams the user belongs to (either through users relation or teamId)
     const teams = await prisma.team.findMany({
       where: {
-        users: {
-          some: {
-            id: currentUser.id // Only show teams where the current user is a member
+        OR: [
+          {
+            users: {
+              some: {
+                id: currentUser.id // Teams where user is in users relation
+              }
+            }
+          },
+          {
+            id: currentUser.teamId // Teams where user's teamId matches team id
           }
-        }
+        ]
       },
       include: {
         users: {
@@ -57,7 +68,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    console.log('✅ Teams fetched successfully:', teams.length, 'teams')
+    console.log('✅ Teams fetched successfully:', { 
+      count: teams.length, 
+      teams: teams.map(t => ({ 
+        id: t.id, 
+        name: t.name, 
+        userCount: t.users.length,
+        userIds: t.users.map(u => u.id)
+      }))
+    })
     return NextResponse.json(teams)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
