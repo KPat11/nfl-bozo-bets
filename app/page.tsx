@@ -391,10 +391,23 @@ export default function Home() {
   }
 
   useEffect(() => {
+    // Only check auth status once on mount
     checkAuthStatus()
-    fetchUsers()
-    checkForBiggestBozo()
-  }, [fetchUsers, checkForBiggestBozo]) // Simplified - no complex sync logic
+  }, []) // Empty dependency array - only run once on mount
+
+  useEffect(() => {
+    // Only fetch users if authenticated
+    if (isAuthenticated) {
+      fetchUsers()
+    }
+  }, [isAuthenticated, fetchUsers])
+
+  useEffect(() => {
+    // Only check for biggest bozo if authenticated
+    if (isAuthenticated) {
+      checkForBiggestBozo()
+    }
+  }, [isAuthenticated, checkForBiggestBozo])
 
   // Update current week periodically
   useEffect(() => {

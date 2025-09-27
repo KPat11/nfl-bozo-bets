@@ -370,11 +370,13 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         return
       }
       
-      // Reset form when modal opens
-      setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '', betType: 'BOZO' })
-      setError('')
-      setPropMatchResult(null)
-      setSearchSuggestions([])
+      // Only reset form if it's the first time opening
+      if (formData.teamId === '') {
+        setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '', betType: 'BOZO' })
+        setError('')
+        setPropMatchResult(null)
+        setSearchSuggestions([])
+      }
       
       // Validate NFL week
       const validation = canSubmitBetForWeek(week, season)
