@@ -974,7 +974,7 @@ export default function Home() {
               authUser: authUser?.name || 'None',
               token: authToken ? 'Present' : 'Missing'
             })}
-            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={authUser} authToken={authToken} />
+            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
           </>
         )}
 

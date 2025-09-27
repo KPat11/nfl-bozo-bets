@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from './db'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
-const JWT_EXPIRES_IN = '7d'
+const JWT_EXPIRES_IN = '24h'
 
 export interface AuthUser {
   id: string
@@ -73,7 +73,7 @@ export async function createSession(userId: string): Promise<string> {
   })
   
   const expiresAt = new Date()
-  expiresAt.setDate(expiresAt.getDate() + 7) // 7 days
+  expiresAt.setHours(expiresAt.getHours() + 24) // 24 hours
 
   await prisma.session.create({
     data: {
