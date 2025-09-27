@@ -165,7 +165,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           id: t.id, 
           name: t.name, 
           userCount: t.users?.length || 0,
-          users: t.users?.map(u => ({ id: u.id, name: u.name })) || []
+          users: t.users?.map((u: any) => ({ id: u.id, name: u.name })) || []
         })) : 'not array'
       })
       setTeams(Array.isArray(data) ? data : [])
