@@ -342,6 +342,11 @@ export default function Home() {
       localStorageKeys: Object.keys(localStorage)
     })
     
+    // Always clear authentication state first to ensure clean state
+    setAuthUser(null)
+    setAuthToken(null)
+    setIsAuthenticated(false)
+    
     // If we have a token and user in localStorage, validate it
     if (token && user) {
       try {
@@ -361,17 +366,15 @@ export default function Home() {
           // Update with fresh data from server
           setAuthUser(data.user)
           
-          // Only refresh data if we weren't already authenticated
-          if (!isAuthenticated) {
-            await refreshAllData()
-            
-            // Show walkthrough for all users after sign-in (unless they've seen it before)
-            if (!localStorage.getItem('walkthroughShown')) {
-              setTimeout(() => {
-                setShowUserWalkthrough(true)
-                localStorage.setItem('walkthroughShown', 'true')
-              }, 1000) // Small delay to let the UI settle
-            }
+          // Refresh data after successful authentication
+          await refreshAllData()
+          
+          // Show walkthrough for all users after sign-in (unless they've seen it before)
+          if (!localStorage.getItem('walkthroughShown')) {
+            setTimeout(() => {
+              setShowUserWalkthrough(true)
+              localStorage.setItem('walkthroughShown', 'true')
+            }, 1000) // Small delay to let the UI settle
           }
         } else {
           console.log('❌ Token validation failed, clearing storage')
@@ -991,7 +994,7 @@ export default function Home() {
               currentUser: currentUser?.name || 'None',
               localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing'
             })}
-            {isAuthenticated ? (
+            {isAuthenticated && authToken ? (
               <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
             ) : (
               <div className="bg-gray-800 rounded-lg p-8 text-center">
