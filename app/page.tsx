@@ -142,20 +142,20 @@ export default function Home() {
         const authData = await authResponse.json()
         setAuthUser(authData.user)
         
-        // Create a proper User object with all required properties
-        const userObject: User = {
-          id: authData.user.id,
-          name: authData.user.name,
-          email: authData.user.email,
-          phone: '',
-          totalBozos: 0,
-          totalHits: 0,
-          isBiggestBozo: authData.user.isBiggestBozo,
-          isAdmin: authData.user.isAdmin,
-          managementWeek: null,
-          managementSeason: null,
-          weeklyBets: []
-        }
+          // Create a proper User object with all required properties
+          const userObject: User = {
+            id: authData.user.id,
+            name: authData.user.name,
+            email: authData.user.email,
+            phone: '',
+            totalBozos: 0,
+            totalHits: 0,
+            isBiggestBozo: authData.user.isBiggestBozo,
+            isAdmin: authData.user.isAdmin,
+            managementWeek: undefined,
+            managementSeason: undefined,
+            weeklyBets: []
+          }
         setCurrentUser(userObject)
       } else {
         // If auth fails, ensure currentUser is set from existing authUser
@@ -170,8 +170,8 @@ export default function Home() {
             totalHits: 0,
             isBiggestBozo: authUser.isBiggestBozo,
             isAdmin: authUser.isAdmin,
-            managementWeek: null,
-            managementSeason: null,
+            managementWeek: undefined,
+            managementSeason: undefined,
             weeklyBets: []
           }
           setCurrentUser(userObject)
@@ -407,8 +407,8 @@ export default function Home() {
             totalHits: 0,
             isBiggestBozo: data.user.isBiggestBozo,
             isAdmin: data.user.isAdmin,
-            managementWeek: null,
-            managementSeason: null,
+            managementWeek: undefined,
+            managementSeason: undefined,
             weeklyBets: []
           }
           setCurrentUser(userObject)
