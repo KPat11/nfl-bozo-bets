@@ -3,7 +3,9 @@ import { prisma } from '@/lib/db'
 import { z } from 'zod'
 
 const updateUserSchema = z.object({
-  teamId: z.string().optional()
+  name: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional()
 })
 
 export async function PUT(
@@ -14,22 +16,16 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     
-    const { teamId } = updateUserSchema.parse(body)
+    const { name, email, phone } = updateUserSchema.parse(body)
 
-    // Validate team exists if provided
-    if (teamId) {
-      const team = await prisma.team.findUnique({
-        where: { id: teamId }
-      })
-      if (!team) {
-        return NextResponse.json({ error: 'Team not found' }, { status: 404 })
-      }
-    }
-
-    // Update user with teamId
+    // Update user basic info (team memberships are managed separately)
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { teamId: teamId || null }
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+        ...(phone !== undefined && { phone })
+      }
     })
 
     return NextResponse.json(updatedUser)

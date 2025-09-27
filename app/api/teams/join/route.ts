@@ -43,15 +43,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email does not match invitation' }, { status: 403 })
     }
 
-    // Check if user is already in a team
-    if (user.teamId) {
-      return NextResponse.json({ error: 'User is already in a team' }, { status: 409 })
+    // Check if user is already a member of this team
+    const existingMembership = await prisma.teamMembership.findUnique({
+      where: {
+        userId_teamId: {
+          userId: userId,
+          teamId: invitation.teamId
+        }
+      }
+    })
+
+    if (existingMembership) {
+      return NextResponse.json({ error: 'User is already a member of this team' }, { status: 409 })
     }
 
-    // Add user to team
-    await prisma.user.update({
-      where: { id: userId },
-      data: { teamId: invitation.teamId }
+    // Add user to team via membership
+    await prisma.teamMembership.create({
+      data: {
+        userId: userId,
+        teamId: invitation.teamId
+      }
     })
 
     // Mark invitation as used
