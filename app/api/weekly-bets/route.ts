@@ -6,6 +6,7 @@ import { canSubmitBetForWeek } from '@/lib/nflWeekUtils'
 
 const createWeeklyBetSchema = z.object({
   userId: z.string(),
+  teamId: z.string().optional(),
   week: z.number().int().min(1).max(18),
   season: z.number().int().min(2020),
   prop: z.string().min(1),
@@ -27,7 +28,12 @@ export async function GET(request: NextRequest) {
         ...(season ? { season: parseInt(season) } : {})
       },
       include: {
-        user: true
+        user: {
+          include: {
+            team: true
+          }
+        },
+        team: true
       },
       orderBy: {
         createdAt: 'desc'
@@ -59,7 +65,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { userId, week, season, prop, odds, fanduelId, betType } = createWeeklyBetSchema.parse(body)
+    const { userId, teamId, week, season, prop, odds, fanduelId, betType } = createWeeklyBetSchema.parse(body)
 
     // Validate NFL week timing
     const weekValidation = canSubmitBetForWeek(week, season)
@@ -110,6 +116,7 @@ export async function POST(request: NextRequest) {
     const weeklyBet = await prisma.weeklyBet.create({
       data: {
         userId,
+        teamId: teamId || null,
         week,
         season,
         prop,

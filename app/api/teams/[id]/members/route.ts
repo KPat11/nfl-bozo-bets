@@ -51,7 +51,19 @@ export async function POST(
     // Check if team exists and if it's locked
     const team = await prisma.team.findUnique({
       where: { id: teamId },
-      include: { users: true }
+      include: { 
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
+          }
+        }
+      }
     })
 
     if (!team) {
@@ -68,7 +80,7 @@ export async function POST(
     }
 
     // Check if user is already a member
-    const isAlreadyMember = team.users.some(user => user.id === targetUserId)
+    const isAlreadyMember = team.memberships.some(membership => membership.userId === targetUserId)
     if (isAlreadyMember) {
       return NextResponse.json({ 
         error: 'Already a member', 
@@ -86,34 +98,26 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Update user's teamId and add to team's users relation
-    console.log('🔍 Updating user teamId and team membership:', { targetUserId, teamId })
+    // Create team membership
+    console.log('🔍 Creating team membership:', { targetUserId, teamId })
     
-    // First, update the user's teamId
-    const updatedUser = await prisma.user.update({
-      where: { id: targetUserId },
-      data: { teamId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        teamId: true
-      }
-    })
-    
-    // Then, add the user to the team's users relation
-    await prisma.team.update({
-      where: { id: teamId },
+    const membership = await prisma.teamMembership.create({
       data: {
-        users: {
-          connect: {
-            id: targetUserId
+        userId: targetUserId,
+        teamId: teamId
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
           }
         }
       }
     })
     
-    console.log('🔍 User updated successfully and added to team:', updatedUser)
+    console.log('🔍 Team membership created successfully:', membership)
 
     return NextResponse.json({
       success: true,
@@ -122,7 +126,7 @@ export async function POST(
         id: teamId,
         name: team.name
       },
-      user: updatedUser
+      user: membership.user
     })
   } catch (error) {
     console.error('Error adding member to team:', error)
@@ -176,45 +180,41 @@ export async function DELETE(
     }
 
     // Check if user exists and is in this team
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-
-    if (user.teamId !== teamId) {
-      return NextResponse.json({ error: 'User is not in this team' }, { status: 400 })
-    }
-
-    // Remove user from team (set teamId to null and remove from team's users relation)
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { teamId: null },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        teamId: true
+    const membership = await prisma.teamMembership.findUnique({
+      where: {
+        userId_teamId: {
+          userId: userId,
+          teamId: teamId
+        }
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
       }
     })
 
-    // Also remove the user from the team's users relation
-    await prisma.team.update({
-      where: { id: teamId },
-      data: {
-        users: {
-          disconnect: {
-            id: userId
-          }
+    if (!membership) {
+      return NextResponse.json({ error: 'User is not a member of this team' }, { status: 404 })
+    }
+
+    // Remove team membership
+    await prisma.teamMembership.delete({
+      where: {
+        userId_teamId: {
+          userId: userId,
+          teamId: teamId
         }
       }
     })
 
     return NextResponse.json({
       message: 'Member removed from team successfully',
-      user: updatedUser
+      user: membership.user
     })
   } catch (error) {
     console.error('Error removing member from team:', error)

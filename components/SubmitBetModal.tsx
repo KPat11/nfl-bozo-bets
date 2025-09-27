@@ -281,6 +281,17 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
     return selectedTeam.users
   }
 
+  // Get teams the current user is a member of
+  const getUserTeams = () => {
+    if (!currentUser?.id) return teams
+    
+    // For now, return all teams since we're using the old single-team system
+    // This will be updated when we implement the multi-team system
+    return teams.filter(team => 
+      team.users.some(user => user.id === currentUser.id)
+    )
+  }
+
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     setFormData(prev => ({ ...prev, prop: value }))
@@ -628,7 +639,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <div>User ID: {formData.userId}</div>
             <div>Prop: {formData.prop}</div>
             <div>Odds: {formData.odds}</div>
-            <div>Available Teams: {teams.length}</div>
+            <div>Available Teams: {getUserTeams().length}</div>
             <div>Available Users: {getFilteredUsers().length}</div>
           </div>
 
@@ -703,8 +714,9 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               >
                 <option value="">Select a team/group</option>
                 {(() => {
-                  console.log('🔍 SubmitBetModal - Rendering teams dropdown:', { teams, count: teams.length })
-                  return teams.map(team => (
+                  const userTeams = getUserTeams()
+                  console.log('🔍 SubmitBetModal - Rendering teams dropdown:', { teams: userTeams, count: userTeams.length })
+                  return userTeams.map(team => (
                     <option key={team.id} value={team.id}>
                       {team.name} ({team.users.length} members)
                     </option>

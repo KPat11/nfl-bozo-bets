@@ -32,51 +32,66 @@ export async function GET(request: NextRequest) {
 
     const currentUser = session.user
 
-    // Only fetch users from the same team as the current user
-    const users = await prisma.user.findMany({
+    // Get all teams the current user is a member of
+    const userMemberships = await prisma.teamMembership.findMany({
       where: {
-        teamId: currentUser.teamId // Only show users from the same team
+        userId: currentUser.id
       },
       include: {
-        team: true,
-        weeklyBets: true
+        team: true
+      }
+    })
+
+    const userTeamIds = userMemberships.map(membership => membership.teamId)
+
+    // Fetch all users from teams the current user is a member of
+    const users = await prisma.user.findMany({
+      where: {
+        teamMemberships: {
+          some: {
+            teamId: {
+              in: userTeamIds
+            }
+          }
+        }
+      },
+      include: {
+        teamMemberships: {
+          include: {
+            team: true
+          }
+        },
+        weeklyBets: {
+          include: {
+            team: true
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
       }
     })
 
-    // Try to add team data if available
-    const usersWithTeams = await Promise.all(users.map(async (user) => {
-      try {
-        // Check if user has teamId property (for backward compatibility)
-        const teamId = user.teamId
-        if (!teamId) {
-          return {
-            ...user,
-            team: null
-          }
-        }
-
-        const team = await prisma.team.findUnique({
-          where: { id: teamId }
-        })
-        
-        return {
-          ...user,
-          team: team ? {
-            id: team.id,
-            name: team.name,
-            color: team.color
-          } : null
-        }
-      } catch {
-        return {
-          ...user,
-          team: null
-        }
+    // Transform users to include team data from memberships
+    const usersWithTeams = users.map(user => {
+      // Get the first team from memberships (for backward compatibility)
+      const firstTeam = user.teamMemberships[0]?.team
+      
+      return {
+        ...user,
+        team: firstTeam ? {
+          id: firstTeam.id,
+          name: firstTeam.name,
+          color: firstTeam.color
+        } : null,
+        // Add all teams for multi-team support
+        teams: user.teamMemberships.map(membership => ({
+          id: membership.team.id,
+          name: membership.team.name,
+          color: membership.team.color
+        }))
       }
-    }))
+    })
 
     return NextResponse.json(usersWithTeams)
   } catch (error) {
@@ -174,3 +189,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 })
   }
 }
+

@@ -34,12 +34,18 @@ interface User {
     name: string
     color?: string
   }
+  teams?: {
+    id: string
+    name: string
+    color?: string
+  }[]
   weeklyBets: WeeklyBet[]
 }
 
 interface WeeklyBet {
   id: string
   userId: string
+  teamId?: string
   week: number
   season: number
   prop: string
@@ -100,6 +106,7 @@ export default function Home() {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false)
   const [showUserWalkthrough, setShowUserWalkthrough] = useState(false)
   const [selectedLeaderboardTeam, setSelectedLeaderboardTeam] = useState<string | null>(null)
+  const [selectedBetsTeam, setSelectedBetsTeam] = useState<string | null>(null)
 
   // Centralized data refresh function - like Sleeper/Underdog Fantasy
   const refreshAllData = useCallback(async () => {
@@ -453,10 +460,21 @@ export default function Home() {
   }
 
   const getCurrentWeekBets = () => {
-    // Only show bets from users in the current user's team
-    if (!authUser?.teamId) return []
+    // Show bets from the selected team's members
+    if (!selectedBetsTeam) return []
     
-    const teamMembers = users.filter(user => user.teamId === authUser.teamId)
+    // Get all users from the selected team
+    const teamMembers = users.filter(user => {
+      // Check if user is a member of the selected team
+      if (user.teams && user.teams.length > 0) {
+        return user.teams.some(team => team.id === selectedBetsTeam)
+      } else if (user.team) {
+        return user.team.id === selectedBetsTeam
+      }
+      return false
+    })
+    
+    // Get all bets from team members for current week
     return teamMembers.flatMap(user => 
       user.weeklyBets?.filter(bet => bet.week === currentWeek && bet.season === currentSeason) || []
     )
@@ -492,12 +510,19 @@ export default function Home() {
 
   const getUserTeams = () => {
     // Get all teams the user belongs to
-    if (!authUser?.teamId) return []
+    if (!authUser?.id) return []
     
-    const userTeam = users.find(user => user.id === authUser.id)?.team
-    if (!userTeam) return []
+    const currentUserData = users.find(user => user.id === authUser.id)
+    if (!currentUserData) return []
     
-    return [userTeam]
+    // Return teams from memberships if available, otherwise fall back to single team
+    if (currentUserData.teams && currentUserData.teams.length > 0) {
+      return currentUserData.teams
+    } else if (currentUserData.team) {
+      return [currentUserData.team]
+    }
+    
+    return []
   }
 
   const getBozoBets = () => {
@@ -1018,6 +1043,32 @@ export default function Home() {
               {/* Current Week Bets - Only show on bets tab */}
               {activeTab === 'bets' && isAuthenticated && (
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
+                  {/* Team Selection Header */}
+                  <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700 p-4 sm:p-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+                      <div>
+                        <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">📊 Weekly Bets</h2>
+                        <p className="text-gray-400 text-sm sm:text-base">
+                          View and manage bets from team members
+                        </p>
+                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
+                        <label className="text-sm font-medium text-gray-300">Team:</label>
+                        <select
+                          value={selectedBetsTeam || ''}
+                          onChange={(e) => setSelectedBetsTeam(e.target.value || null)}
+                          className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:w-auto"
+                        >
+                          <option value="">Select a team to view bets</option>
+                          {getUserTeams().map(team => (
+                            <option key={team.id} value={team.id}>
+                              {team.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
                   {/* Bozo Bets Section */}
                   <div className="bg-gray-800 rounded-xl shadow-xl border border-gray-700">
                     <div className="px-4 sm:px-6 py-4 border-b border-gray-700">
@@ -1047,6 +1098,7 @@ export default function Home() {
                       <div className="divide-y divide-gray-700">
                         {getBozoBets().map((bet) => {
                           const user = users.find(u => u.id === bet.userId)
+                          const team = bet.teamId ? users.find(u => u.teamId === bet.teamId)?.team : user?.team
                           const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                           
                           return (
@@ -1075,6 +1127,20 @@ export default function Home() {
                                       </span>
                                     </div>
                                   </div>
+                                  {team && (
+                                    <div className="mb-2">
+                                      <span 
+                                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                        style={{ 
+                                          backgroundColor: `${team.color || '#3b82f6'}20`,
+                                          color: team.color || '#3b82f6',
+                                          border: `1px solid ${team.color || '#3b82f6'}40`
+                                        }}
+                                      >
+                                        {team.name}
+                                      </span>
+                                    </div>
+                                  )}
                                   <p className="text-sm text-gray-300 mb-2 line-clamp-2">{bet.prop}</p>
                                   <div className="flex items-center justify-between">
                                     <span className="text-sm text-gray-400">
@@ -1130,6 +1196,9 @@ export default function Home() {
                             Member
                           </th>
                           <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                            Team
+                          </th>
+                          <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                             Prop Bet
                           </th>
                           <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -1149,7 +1218,7 @@ export default function Home() {
                       <tbody className="bg-gray-800 divide-y divide-gray-700">
                         {getBozoBets().length === 0 ? (
                           <tr>
-                            <td colSpan={6} className="px-6 py-12 text-center">
+                            <td colSpan={7} className="px-6 py-12 text-center">
                               <div className="flex flex-col items-center space-y-3">
                                 <span className="text-4xl">🤡</span>
                                 <p className="text-gray-400 text-lg">No bozo bets for Week {currentWeek}</p>
@@ -1160,6 +1229,7 @@ export default function Home() {
                         ) : (
                           getBozoBets().map((bet) => {
                             const user = users.find(u => u.id === bet.userId)
+                            const team = bet.teamId ? users.find(u => u.teamId === bet.teamId)?.team : user?.team
                             const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                             
                             return (
@@ -1172,31 +1242,33 @@ export default function Home() {
                                       </span>
                                     </div>
                                     <div className="ml-4">
-                                      <div className="flex items-center space-x-2">
-                                        <div className="text-sm font-medium text-white">{user?.name}</div>
-                                {user?.team && (
-                                  <span 
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                                    style={{ 
-                                      backgroundColor: `${user.team.color || '#3b82f6'}20`,
-                                      color: user.team.color || '#3b82f6',
-                                      border: `1px solid ${user.team.color || '#3b82f6'}40`
-                                    }}
-                                  >
-                                    {user.team.name}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-4 text-sm text-gray-400">
-                                <span>{user?.email}</span>
-                                <span>•</span>
-                                <span className="text-red-400">{user?.totalBozos || 0} bozos</span>
-                                <span>•</span>
-                                <span className="text-green-400">{user?.totalHits || 0} hits</span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
+                                      <div className="text-sm font-medium text-white">{user?.name}</div>
+                                      <div className="flex items-center space-x-4 text-sm text-gray-400">
+                                        <span>{user?.email}</span>
+                                        <span>•</span>
+                                        <span className="text-red-400">{user?.totalBozos || 0} bozos</span>
+                                        <span>•</span>
+                                        <span className="text-green-400">{user?.totalHits || 0} hits</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  {team ? (
+                                    <span 
+                                      className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                      style={{ 
+                                        backgroundColor: `${team.color || '#3b82f6'}20`,
+                                        color: team.color || '#3b82f6',
+                                        border: `1px solid ${team.color || '#3b82f6'}40`
+                                      }}
+                                    >
+                                      {team.name}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-400 text-sm">No Team</span>
+                                  )}
+                                </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                           {bet.prop}
                         </td>
@@ -1301,7 +1373,8 @@ export default function Home() {
               <div className="divide-y divide-gray-700">
                 {getFavoriteBets().map((bet) => {
                   const user = users.find(u => u.id === bet.userId)
-                            const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
+                  const team = bet.teamId ? users.find(u => u.teamId === bet.teamId)?.team : user?.team
+                  const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                   
                   return (
                     <div key={bet.id} className="p-4 hover:bg-gray-750 transition-colors">
@@ -1329,6 +1402,20 @@ export default function Home() {
                               </span>
                             </div>
                           </div>
+                          {team && (
+                            <div className="mb-2">
+                              <span 
+                                className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                style={{ 
+                                  backgroundColor: `${team.color || '#3b82f6'}20`,
+                                  color: team.color || '#3b82f6',
+                                  border: `1px solid ${team.color || '#3b82f6'}40`
+                                }}
+                              >
+                                {team.name}
+                              </span>
+                            </div>
+                          )}
                           <p className="text-sm text-gray-300 mb-2 line-clamp-2">{bet.prop}</p>
                           <div className="flex items-center justify-between">
                             <span className="text-sm text-gray-400">
@@ -1374,6 +1461,9 @@ export default function Home() {
                     Member
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                    Team
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                     Prop Bet
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -1393,7 +1483,7 @@ export default function Home() {
               <tbody className="bg-gray-800 divide-y divide-gray-700">
                 {getFavoriteBets().length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={7} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center space-y-3">
                         <span className="text-4xl">⭐</span>
                         <p className="text-gray-400 text-lg">No favorite picks for Week {currentWeek}</p>
@@ -1404,7 +1494,8 @@ export default function Home() {
                 ) : (
                   getFavoriteBets().map((bet) => {
                     const user = users.find(u => u.id === bet.userId)
-                            const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
+                    const team = bet.teamId ? users.find(u => u.teamId === bet.teamId)?.team : user?.team
+                    const isPaid = bet.payments?.some(p => p.status === 'PAID') || false
                     
                     return (
                       <tr key={bet.id} className="hover:bg-gray-750 transition-colors">
@@ -1416,20 +1507,7 @@ export default function Home() {
                               </span>
                             </div>
                             <div className="ml-4">
-                              <div className="flex items-center space-x-2">
-                                <div className="text-sm font-medium text-white">{user?.name}</div>
-                                {user?.team && (
-                                  <span 
-                                    className="px-2 py-1 rounded-full text-xs font-medium text-white"
-                                    style={{ 
-                                      backgroundColor: user.team.color || '#3b82f6',
-                                      border: `1px solid ${user.team.color || '#3b82f6'}40`
-                                    }}
-                                  >
-                                    {user.team.name}
-                                  </span>
-                                )}
-                              </div>
+                              <div className="text-sm font-medium text-white">{user?.name}</div>
                               <div className="flex items-center space-x-4 text-sm text-gray-400">
                                 <span>{user?.email}</span>
                                 <span>•</span>
@@ -1439,6 +1517,22 @@ export default function Home() {
                               </div>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {team ? (
+                            <span 
+                              className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                              style={{ 
+                                backgroundColor: `${team.color || '#3b82f6'}20`,
+                                color: team.color || '#3b82f6',
+                                border: `1px solid ${team.color || '#3b82f6'}40`
+                              }}
+                            >
+                              {team.name}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No Team</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                           {bet.prop}

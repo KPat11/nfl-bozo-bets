@@ -12,7 +12,6 @@ model User {
   email           String      @unique
   name            String
   phone           String?
-  teamId          String?
   password        String      @default("") // Hashed password for authentication
   totalBozos      Int         @default(0)
   totalHits       Int         @default(0)
@@ -25,13 +24,13 @@ model User {
   updatedAt       DateTime    @updatedAt
   bozoStats       BozoStat[]
   payments        Payment[]
-  team            Team?       @relation(fields: [teamId], references: [id])
   weeklyBets      WeeklyBet[]
   managedBets     BetManagement[] @relation("ManagedBets")
   ledTeams        Team[]      @relation("TeamBiggestBozo")
   sessions        Session[]   // Authentication sessions
   passwordResets  PasswordReset[] // Password reset tokens
   teamInvitations TeamInvitation[] @relation("TeamInvitations") // Team invitations sent
+  teamMemberships TeamMembership[] // Many-to-many relationship with teams
 
   @@map("users")
 }
@@ -47,9 +46,10 @@ model Team {
   highestOdds Int?     @default(130)  // Highest allowed odds (e.g., +130)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  users         User[]
   biggestBozo   User?    @relation("TeamBiggestBozo", fields: [biggestBozoId], references: [id])
   invitations   TeamInvitation[] // Team invitations
+  weeklyBets    WeeklyBet[] // Bets made for this team
+  memberships   TeamMembership[] // Many-to-many relationship with users
 
   @@map("teams")
 }
@@ -57,6 +57,7 @@ model Team {
 model WeeklyBet {
   id        String     @id @default(cuid())
   userId    String
+  teamId    String?    // Team the bet was made for
   week      Int
   season    Int
   prop      String
@@ -69,6 +70,7 @@ model WeeklyBet {
   updatedAt DateTime   @updatedAt
   payments  Payment[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team?      @relation(fields: [teamId], references: [id])
   management BetManagement[]
 
   @@unique([userId, week, season, betType])
@@ -211,6 +213,18 @@ model PasswordReset {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_resets")
+}
+
+model TeamMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  teamId    String
+  joinedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@map("team_memberships")
 }
 
 model TeamInvitation {

@@ -38,29 +38,25 @@ export async function GET(request: NextRequest) {
       userTeamId: currentUser.teamId 
     })
     
-    // Fetch teams the user belongs to (either through users relation or teamId)
+    // Fetch teams the user belongs to through team memberships
     const teams = await prisma.team.findMany({
       where: {
-        OR: [
-          {
-            users: {
-              some: {
-                id: currentUser.id // Teams where user is in users relation
-              }
-            }
-          },
-          // Only include teamId condition if it's not null
-          ...(currentUser.teamId ? [{
-            id: currentUser.teamId // Teams where user's teamId matches team id
-          }] : [])
-        ]
+        memberships: {
+          some: {
+            userId: currentUser.id
+          }
+        }
       },
       include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         }
       },
@@ -69,16 +65,22 @@ export async function GET(request: NextRequest) {
       }
     })
 
+    // Transform the data to match the expected format
+    const teamsWithUsers = teams.map(team => ({
+      ...team,
+      users: team.memberships.map(membership => membership.user)
+    }))
+
     console.log('✅ Teams fetched successfully:', { 
-      count: teams.length, 
-      teams: teams.map(t => ({ 
+      count: teamsWithUsers.length, 
+      teams: teamsWithUsers.map(t => ({ 
         id: t.id, 
         name: t.name, 
         userCount: t.users.length,
         userIds: t.users.map(u => u.id)
       }))
     })
-    return NextResponse.json(teams)
+    return NextResponse.json(teamsWithUsers)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
     // Return empty array instead of error to prevent frontend crashes
@@ -121,32 +123,36 @@ export async function POST(request: NextRequest) {
         lowestOdds: lowestOdds || -120, // Default lowest odds
         highestOdds: highestOdds || 130, // Default highest odds
         isLocked: false,
-        users: {
-          connect: {
-            id: session.user.id // Add the creator to the team
+        memberships: {
+          create: {
+            userId: session.user.id // Add the creator to the team
           }
         }
       },
       include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         }
       }
     })
 
-    console.log('✅ Team created successfully:', team.name)
+    // Transform the data to match the expected format
+    const teamWithUsers = {
+      ...team,
+      users: team.memberships.map(membership => membership.user)
+    }
+
+    console.log('✅ Team created successfully:', teamWithUsers.name)
     
-    // Update the user's teamId to the newly created team
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { teamId: team.id }
-    })
-    
-    return NextResponse.json(team, { status: 201 })
+    return NextResponse.json(teamWithUsers, { status: 201 })
   } catch (error) {
     console.error('❌ Error creating team:', error)
     
