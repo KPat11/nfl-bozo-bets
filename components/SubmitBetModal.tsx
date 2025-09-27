@@ -119,14 +119,22 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   }, [])
 
   const fetchTeams = useCallback(async () => {
+    console.log('🔍 SubmitBetModal - fetchTeams called')
     try {
       const token = localStorage.getItem('authToken')
+      console.log('🔍 SubmitBetModal - Token check:', { 
+        hasToken: !!token, 
+        tokenLength: token?.length || 0,
+        tokenStart: token?.substring(0, 20) || 'none'
+      })
+      
       if (!token) {
-        console.log('No auth token found for teams fetch')
+        console.log('❌ No auth token found for teams fetch')
         setTeams([])
         return
       }
 
+      console.log('🔍 SubmitBetModal - Making API call to /api/teams')
       const response = await fetch('/api/teams', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -134,7 +142,15 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         },
       })
       
+      console.log('🔍 SubmitBetModal - API response:', { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText
+      })
+      
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ API Error:', { status: response.status, errorText })
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
@@ -143,11 +159,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         status: response.status, 
         data, 
         isArray: Array.isArray(data),
-        length: Array.isArray(data) ? data.length : 'not array'
+        length: Array.isArray(data) ? data.length : 'not array',
+        teams: Array.isArray(data) ? data.map(t => ({ id: t.id, name: t.name, userCount: t.users?.length || 0 })) : 'not array'
       })
       setTeams(Array.isArray(data) ? data : [])
     } catch (error) {
-      console.error('Error fetching teams:', error)
+      console.error('❌ Error fetching teams:', error)
       setTeams([]) // Set empty array on error
     }
   }, [])
@@ -332,7 +349,17 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   }, [week, season])
 
   useEffect(() => {
+    console.log('🔍 SubmitBetModal - useEffect triggered:', { 
+      isOpen, 
+      week, 
+      season, 
+      refreshTrigger,
+      currentUser: currentUser?.name || 'none'
+    })
+    
     if (isOpen) {
+      console.log('🔍 SubmitBetModal - Modal is open, fetching data...')
+      
       // Reset form when modal opens
       setFormData({ userId: '', teamId: '', prop: '', odds: '', fanduelId: '', betType: 'BOZO' })
       setError('')
@@ -343,6 +370,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       const validation = canSubmitBetForWeek(week, season)
       setWeekValidation(validation)
       
+      console.log('🔍 SubmitBetModal - Calling fetch functions...')
       fetchUsers()
       fetchTeams()
       fetchFanDuelProps()
