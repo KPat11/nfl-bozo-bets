@@ -101,9 +101,77 @@ export default function Home() {
   const [showUserWalkthrough, setShowUserWalkthrough] = useState(false)
   const [selectedLeaderboardTeam, setSelectedLeaderboardTeam] = useState<string | null>(null)
 
+  // Centralized data refresh function - like Sleeper/Underdog Fantasy
+  const refreshAllData = useCallback(async () => {
+    console.log('🔄 Refreshing all data...')
+    
+    try {
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        console.log('No auth token for data refresh')
+        return
+      }
+
+      // Refresh user data
+      const usersResponse = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json()
+        const userData = Array.isArray(usersData) ? usersData : []
+        setUsers(userData)
+        
+        if (userData.length > 0) {
+          setCurrentUser(userData[0])
+        } else {
+          setCurrentUser(null)
+        }
+      }
+
+      // Refresh auth user data
+      const authResponse = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      if (authResponse.ok) {
+        const authData = await authResponse.json()
+        setAuthUser(authData.user)
+      }
+
+      // Trigger submit bet modal refresh
+      setSubmitBetRefreshTrigger(prev => prev + 1)
+      
+      console.log('✅ All data refreshed successfully')
+    } catch (error) {
+      console.error('❌ Error refreshing data:', error)
+    }
+  }, [])
+
   const fetchUsers = useCallback(async () => {
     try {
-      const response = await fetch('/api/users')
+      const token = localStorage.getItem('authToken')
+      if (!token) {
+        console.log('No auth token for fetchUsers')
+        setUsers([])
+        setCurrentUser(null)
+        return
+      }
+
+      const response = await fetch('/api/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
       const data = await response.json()
       const userData = Array.isArray(data) ? data : []
       setUsers(userData)
@@ -119,6 +187,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
+      setCurrentUser(null)
     } finally {
       setLoading(false)
     }
@@ -143,12 +212,11 @@ export default function Home() {
 
 
   const handleBetSubmitted = () => {
-    fetchUsers()
+    refreshAllData() // Use centralized refresh function
   }
 
   const handleTeamCreated = () => {
-    fetchUsers()
-    setSubmitBetRefreshTrigger(prev => prev + 1) // Trigger submit bet modal refresh
+    refreshAllData() // Use centralized refresh function
   }
 
   const handleJoinTeam = () => {
@@ -197,7 +265,7 @@ export default function Home() {
   }
 
   // Authentication functions
-  const handleLogin = (user: {
+  const handleLogin = async (user: {
     id: string
     email: string
     name: string
@@ -220,6 +288,9 @@ export default function Home() {
       user: user.name,
       tokenStored: !!localStorage.getItem('authToken')
     })
+    
+    // Refresh all data after login
+    await refreshAllData()
     
     // Check if this is a first-time user (no team assigned)
     if (!user.teamId) {
@@ -282,6 +353,9 @@ export default function Home() {
           setAuthUser(data.user)
           setAuthToken(token)
           setIsAuthenticated(true)
+          
+          // Refresh all data after successful authentication
+          await refreshAllData()
           
           // Show walkthrough for all users after sign-in (unless they've seen it before)
           if (!localStorage.getItem('walkthroughShown')) {
