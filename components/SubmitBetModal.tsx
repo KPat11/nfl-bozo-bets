@@ -285,8 +285,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
   const getUserTeams = () => {
     if (!currentUser?.id) return teams
     
-    // For now, return all teams since we're using the old single-team system
-    // This will be updated when we implement the multi-team system
+    // Filter teams where the current user is a member
     return teams.filter(team => 
       team.users.some(user => user.id === currentUser.id)
     )
@@ -724,6 +723,15 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                       <p className="text-yellow-300 text-xs">
                         • Or join an existing team if you have an invitation
                       </p>
+                    </div>
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        Go to Teams & Groups
+                      </button>
                     </div>
                   </div>
                 )
