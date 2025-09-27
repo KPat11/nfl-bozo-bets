@@ -9,11 +9,15 @@ export async function GET() {
     const teams = await prisma.team.findMany()
     console.log('✅ Teams found:', teams.length)
     
-    // Test if users table has teamId field
+    // Test if users table is accessible
     const users = await prisma.user.findMany({
-      select: { id: true, name: true, teamId: true, totalBozos: true, totalHits: true }
+      select: { id: true, name: true, totalBozos: true, totalHits: true }
     })
     console.log('✅ Users found:', users.length)
+    
+    // Test team memberships
+    const memberships = await prisma.teamMembership.findMany()
+    console.log('✅ Team memberships found:', memberships.length)
     
     return NextResponse.json({ 
       success: true,
@@ -21,9 +25,10 @@ export async function GET() {
       data: {
         teamsCount: teams.length,
         usersCount: users.length,
+        membershipsCount: memberships.length,
         teamsTable: 'accessible',
         usersTable: 'accessible',
-        teamIdField: users[0]?.teamId !== undefined,
+        membershipsTable: 'accessible',
         totalBozosField: users[0]?.totalBozos !== undefined,
         totalHitsField: users[0]?.totalHits !== undefined
       }
