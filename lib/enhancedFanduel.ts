@@ -444,9 +444,9 @@ export async function searchProps(
         season, 
         status: 'PENDING',
         OR: [
-          { player: { contains: query, mode: 'insensitive' } },
-          { prop: { contains: query, mode: 'insensitive' } },
-          { team: { contains: query, mode: 'insensitive' } }
+          { player: { contains: query } },
+          { prop: { contains: query } },
+          { team: { contains: query } }
         ]
       }
     })
