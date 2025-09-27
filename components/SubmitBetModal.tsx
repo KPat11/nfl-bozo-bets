@@ -161,9 +161,27 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         data, 
         isArray: Array.isArray(data),
         length: Array.isArray(data) ? data.length : 'not array',
-        teams: Array.isArray(data) ? data.map(t => ({ id: t.id, name: t.name, userCount: t.users?.length || 0 })) : 'not array'
+        teams: Array.isArray(data) ? data.map(t => ({ 
+          id: t.id, 
+          name: t.name, 
+          userCount: t.users?.length || 0,
+          users: t.users?.map(u => ({ id: u.id, name: u.name })) || []
+        })) : 'not array'
       })
       setTeams(Array.isArray(data) ? data : [])
+      
+      // Debug: Check if current user is in any teams
+      if (currentUser?.id && Array.isArray(data)) {
+        const userTeams = data.filter(team => 
+          team.users?.some(user => user.id === currentUser.id)
+        )
+        console.log('🔍 SubmitBetModal - User teams check:', {
+          currentUserId: currentUser.id,
+          allTeams: data.length,
+          userTeams: userTeams.length,
+          userTeamNames: userTeams.map(t => t.name)
+        })
+      }
     } catch (error) {
       console.error('❌ Error fetching teams:', error)
       setTeams([]) // Set empty array on error
@@ -283,12 +301,25 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   // Get teams the current user is a member of
   const getUserTeams = () => {
-    if (!currentUser?.id) return teams
+    if (!currentUser?.id) {
+      console.log('🔍 getUserTeams - No currentUser, returning all teams:', teams.length)
+      return teams
+    }
     
     // Filter teams where the current user is a member
-    return teams.filter(team => 
-      team.users.some(user => user.id === currentUser.id)
+    const userTeams = teams.filter(team => 
+      team.users?.some(user => user.id === currentUser.id)
     )
+    
+    console.log('🔍 getUserTeams - Filtering teams:', {
+      currentUserId: currentUser.id,
+      allTeams: teams.length,
+      userTeams: userTeams.length,
+      teamNames: userTeams.map(t => t.name),
+      allTeamNames: teams.map(t => t.name)
+    })
+    
+    return userTeams
   }
 
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
