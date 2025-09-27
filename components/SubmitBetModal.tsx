@@ -371,9 +371,19 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       setWeekValidation(validation)
       
       console.log('🔍 SubmitBetModal - Calling fetch functions...')
-      fetchUsers()
-      fetchTeams()
-      fetchFanDuelProps()
+      
+      // Always fetch data when modal opens, regardless of refresh trigger
+      const fetchData = async () => {
+        console.log('🔍 SubmitBetModal - Starting data fetch...')
+        await Promise.all([
+          fetchUsers(),
+          fetchTeams(),
+          fetchFanDuelProps()
+        ])
+        console.log('🔍 SubmitBetModal - Data fetch completed')
+      }
+      
+      fetchData()
       
       // Start live odds updates every 30 seconds
       const interval = setInterval(() => {
