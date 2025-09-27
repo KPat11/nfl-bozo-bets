@@ -144,6 +144,11 @@ export default function Home() {
         
         // Set currentUser to the authenticated user
         setCurrentUser(authData.user)
+      } else {
+        // If auth fails, ensure currentUser is set from existing authUser
+        if (authUser && !currentUser) {
+          setCurrentUser(authUser)
+        }
       }
 
       // Trigger submit bet modal refresh
@@ -364,6 +369,9 @@ export default function Home() {
           const data = await response.json()
           // Update with fresh data from server
           setAuthUser(data.user)
+          
+          // Set currentUser immediately to the authenticated user
+          setCurrentUser(data.user)
           
           // Refresh data after successful authentication
           await refreshAllData()
