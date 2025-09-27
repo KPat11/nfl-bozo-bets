@@ -3,13 +3,29 @@ import { prisma } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Teams/available endpoint called')
+    
     // Get the authorization header
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ No token provided')
       return NextResponse.json({ error: 'No token provided' }, { status: 401 })
     }
 
     const token = authHeader.substring(7)
+    console.log('🔍 Token received, length:', token.length)
+    
+    // Test database connection first
+    try {
+      await prisma.$queryRaw`SELECT 1`
+      console.log('✅ Database connection successful')
+    } catch (dbError) {
+      console.error('❌ Database connection failed:', dbError)
+      return NextResponse.json({ 
+        error: 'Database connection failed',
+        details: dbError instanceof Error ? dbError.message : 'Unknown database error'
+      }, { status: 500 })
+    }
     
     // Validate the session to get the current user
     const session = await prisma.session.findUnique({
@@ -18,10 +34,12 @@ export async function GET(request: NextRequest) {
     })
 
     if (!session || session.expiresAt < new Date()) {
+      console.log('❌ Invalid or expired session')
       return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
     }
 
     const currentUser = session.user
+    console.log('✅ User authenticated:', currentUser.name)
 
     console.log('🔍 Fetching available teams to join...')
     

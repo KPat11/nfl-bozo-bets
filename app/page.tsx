@@ -350,7 +350,15 @@ export default function Home() {
     }
   }
 
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false)
+  
   const checkAuthStatus = async () => {
+    // Prevent multiple simultaneous auth checks
+    if (isCheckingAuth) {
+      console.log('🔍 Auth check already in progress, skipping...')
+      return
+    }
+    
     const token = localStorage.getItem('authToken')
     const user = localStorage.getItem('authUser')
     
@@ -358,8 +366,11 @@ export default function Home() {
       token: token ? 'Present' : 'Missing', 
       tokenLength: token?.length || 0,
       user: user ? 'Present' : 'Missing',
-      currentAuthState: isAuthenticated
+      currentAuthState: isAuthenticated,
+      isCheckingAuth
     })
+    
+    setIsCheckingAuth(true)
     
     // If we have a token and user in localStorage, validate it
     if (token && user) {
@@ -431,6 +442,8 @@ export default function Home() {
       setAuthToken(null)
       setIsAuthenticated(false)
     }
+    
+    setIsCheckingAuth(false)
   }
 
   useEffect(() => {
