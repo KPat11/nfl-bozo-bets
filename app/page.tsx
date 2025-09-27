@@ -399,8 +399,22 @@ export default function Home() {
   }
 
   useEffect(() => {
-    // Only check auth status once on mount
+    // Check auth status on mount and also set up a listener for storage changes
     checkAuthStatus()
+    
+    // Listen for storage changes (e.g., from other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'authToken' || e.key === 'authUser') {
+        console.log('🔄 Storage changed, rechecking auth status')
+        checkAuthStatus()
+      }
+    }
+    
+    window.addEventListener('storage', handleStorageChange)
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+    }
   }, []) // Empty dependency array - only run once on mount
 
   useEffect(() => {
@@ -968,7 +982,7 @@ export default function Home() {
         </>
         )}
 
-        {activeTab === 'teams' && isAuthenticated && (
+        {activeTab === 'teams' && (
           <>
             {console.log('🔍 Teams Tab Debug:', { 
               isAuthenticated, 
@@ -977,7 +991,23 @@ export default function Home() {
               currentUser: currentUser?.name || 'None',
               localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing'
             })}
-            <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
+            {isAuthenticated ? (
+              <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
+            ) : (
+              <div className="bg-gray-800 rounded-lg p-8 text-center">
+                <div className="text-6xl mb-4">🔐</div>
+                <h3 className="text-2xl font-bold text-gray-300 mb-4">Authentication Required</h3>
+                <p className="text-gray-400 mb-6">
+                  Please log in to view and manage teams.
+                </p>
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                  Sign In / Sign Up
+                </button>
+              </div>
+            )}
           </>
         )}
 
