@@ -19,6 +19,7 @@ interface Team {
     name: string
     email: string
   }>
+  isMember?: boolean // Flag to indicate if current user is a member
 }
 
 interface TeamsSectionProps {
@@ -49,23 +50,42 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
         return
       }
 
-      const response = await fetch('/api/teams', {
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      // Fetch both user's teams and available teams to join
+      const [userTeamsResponse, availableTeamsResponse] = await Promise.all([
+        fetch('/api/teams', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch('/api/teams/available', {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ])
       
-      if (!response.ok) {
-        if (response.status === 401) {
+      if (!userTeamsResponse.ok || !availableTeamsResponse.ok) {
+        if (userTeamsResponse.status === 401 || availableTeamsResponse.status === 401) {
           setError('Authentication expired. Please log in again.')
           return
         }
         throw new Error('Failed to fetch teams')
       }
       
-      const data = await response.json()
-      setTeams(data)
+      const [userTeams, availableTeamsData] = await Promise.all([
+        userTeamsResponse.json(),
+        availableTeamsResponse.json()
+      ])
+      
+      // Mark user's teams as members and available teams as non-members
+      const userTeamsWithMembership = userTeams.map(team => ({ ...team, isMember: true }))
+      const availableTeamsWithMembership = availableTeamsData.teams.map(team => ({ ...team, isMember: false }))
+      
+      // Combine user's teams and available teams
+      const allTeams = [...userTeamsWithMembership, ...availableTeamsWithMembership]
+      setTeams(allTeams)
     } catch (error) {
       console.error('Error fetching teams:', error)
       setError('Failed to load teams')
@@ -346,32 +366,42 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
                     <h3 className="text-lg font-semibold text-white">{team.name}</h3>
                   </div>
                   <div className="flex space-x-1">
-                    {/* Lock/Unlock Toggle */}
-                    <button 
-                      onClick={() => handleToggleLock(team.id, team.isLocked || false)}
-                      className={`p-1 transition-colors ${
-                        team.isLocked 
-                          ? 'text-red-400 hover:text-red-300' 
-                          : 'text-gray-400 hover:text-green-400'
-                      }`}
-                      title={team.isLocked ? 'Unlock team' : 'Lock team'}
-                    >
-                      {team.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
-                    </button>
-                    <button 
-                      onClick={() => handleEditTeam(team)}
-                      className="p-1 text-gray-400 hover:text-white transition-colors"
-                      title="Edit team"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteTeam(team.id, team.name)}
-                      className="p-1 text-gray-400 hover:text-red-400 transition-colors"
-                      title="Delete team"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    {team.isMember ? (
+                      // Show management buttons for teams user is a member of
+                      <>
+                        {/* Lock/Unlock Toggle */}
+                        <button 
+                          onClick={() => handleToggleLock(team.id, team.isLocked || false)}
+                          className={`p-1 transition-colors ${
+                            team.isLocked 
+                              ? 'text-red-400 hover:text-red-300' 
+                              : 'text-gray-400 hover:text-green-400'
+                          }`}
+                          title={team.isLocked ? 'Unlock team' : 'Lock team'}
+                        >
+                          {team.isLocked ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                        </button>
+                        <button 
+                          onClick={() => handleEditTeam(team)}
+                          className="p-1 text-gray-400 hover:text-white transition-colors"
+                          title="Edit team"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteTeam(team.id, team.name)}
+                          className="p-1 text-gray-400 hover:text-red-400 transition-colors"
+                          title="Delete team"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    ) : (
+                      // Show view-only info for teams user can join
+                      <div className="text-xs text-gray-500">
+                        Available to join
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -399,33 +429,34 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
                   </div>
                 )}
 
-                {/* Join Team Button */}
-                {currentUser && currentUser.teamId !== team.id && (
-                  <div className="mt-4">
-                    {team.isLocked ? (
-                      <div className="flex items-center space-x-2 text-sm text-gray-400">
-                        <Lock className="h-4 w-4" />
-                        <span>Team locked - invitation required</span>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleJoinTeam(team.id)}
-                        className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
-                      >
-                        <UserPlus className="h-4 w-4" />
-                        <span>Join Team</span>
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {/* Current Team Indicator */}
-                {currentUser && currentUser.teamId === team.id && (
-                  <div className="mt-4 flex items-center space-x-2 text-sm text-green-400">
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Your team</span>
-                  </div>
-                )}
+                {/* Team Actions */}
+                <div className="mt-4">
+                  {team.isMember ? (
+                    // User is a member of this team
+                    <div className="flex items-center space-x-2 text-sm text-green-400">
+                      <CheckCircle className="h-4 w-4" />
+                      <span>Your team</span>
+                    </div>
+                  ) : (
+                    // User can join this team
+                    <div>
+                      {team.isLocked ? (
+                        <div className="flex items-center space-x-2 text-sm text-gray-400">
+                          <Lock className="h-4 w-4" />
+                          <span>Team locked - invitation required</span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleJoinTeam(team.id)}
+                          className="w-full flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg transition-colors text-sm"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                          <span>Join Team</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
