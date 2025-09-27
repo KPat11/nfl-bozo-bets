@@ -212,20 +212,20 @@ export default function Home() {
       const userData = Array.isArray(data) ? data : []
       setUsers(userData)
       
-      // Set first user as current user (in a real app, this would be from authentication)
-      if (userData.length > 0) {
+      // Only set currentUser if we don't already have one (preserve authenticated user)
+      if (userData.length > 0 && !currentUser) {
         console.log('Setting current user to:', userData[0])
         setCurrentUser(userData[0])
-      } else {
-        console.log('No users found, setting currentUser to null')
-        setCurrentUser(null)
+      } else if (userData.length === 0) {
+        console.log('No users found, but preserving currentUser if authenticated')
+        // Don't clear currentUser if user is authenticated
       }
     } catch (error) {
       console.error('Error fetching users:', error)
       setUsers([]) // Set empty array on error
-      setCurrentUser(null)
+      // Don't clear currentUser on error if user is authenticated
     }
-  }, [])
+  }, [currentUser])
 
   const checkForBiggestBozo = useCallback(async () => {
     try {
