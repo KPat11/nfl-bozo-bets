@@ -131,12 +131,6 @@ export default function Home() {
         const usersData = await usersResponse.json()
         const userData = Array.isArray(usersData) ? usersData : []
         setUsers(userData)
-        
-        if (userData.length > 0) {
-          setCurrentUser(userData[0])
-        } else {
-          setCurrentUser(null)
-        }
       }
 
       // Refresh auth user data
@@ -147,6 +141,9 @@ export default function Home() {
       if (authResponse.ok) {
         const authData = await authResponse.json()
         setAuthUser(authData.user)
+        
+        // Set currentUser to the authenticated user
+        setCurrentUser(authData.user)
       }
 
       // Trigger submit bet modal refresh
@@ -1006,7 +1003,8 @@ export default function Home() {
               authUser: authUser?.name || 'None',
               token: authToken ? 'Present' : 'Missing',
               currentUser: currentUser?.name || 'None',
-              localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing'
+              localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing',
+              shouldRenderTeams: isAuthenticated && authToken && currentUser
             })}
             {isAuthenticated && authToken && currentUser ? (
               <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
