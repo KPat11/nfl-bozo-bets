@@ -749,8 +749,8 @@ export default function Home() {
         </div>
       )}
 
-  return (
-    <div className="min-h-screen bg-gray-900">
+      {/* Main App Content */}
+      <div className="min-h-screen bg-gray-900">
       {/* Header */}
       <header className="bg-gray-800 shadow-xl border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1781,6 +1781,7 @@ export default function Home() {
         isOpen={showUserWalkthrough}
         onClose={() => setShowUserWalkthrough(false)}
       />
+      </div>
     </div>
   )
 }
