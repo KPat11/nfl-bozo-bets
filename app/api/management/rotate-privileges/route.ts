@@ -13,14 +13,18 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { week, season, teamId } = rotatePrivilegesSchema.parse(body)
 
-    // Get the biggest bozo from the previous week
+    // Get the biggest bozo from the previous week for this team
     const biggestBozoStat = await prisma.bozoStat.findFirst({
       where: {
         week: week - 1,
         season,
         isBiggestBozo: true,
         user: {
-          teamId: teamId
+          teamMemberships: {
+            some: {
+              teamId: teamId
+            }
+          }
         }
       },
       include: {
@@ -38,9 +42,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Remove current biggest bozo privileges from all team members
+    const teamMembers = await prisma.teamMembership.findMany({
+      where: { teamId: teamId },
+      select: { userId: true }
+    })
+    
+    const teamMemberIds = teamMembers.map(m => m.userId)
+    
     await prisma.user.updateMany({
       where: { 
-        teamId: teamId,
+        id: { in: teamMemberIds },
         isBiggestBozo: true 
       },
       data: { 
@@ -99,9 +110,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Get current biggest bozo for the team
+    const teamMembers = await prisma.teamMembership.findMany({
+      where: { teamId: teamId },
+      select: { userId: true }
+    })
+    
+    const teamMemberIds = teamMembers.map(m => m.userId)
+    
     const currentBiggestBozo = await prisma.user.findFirst({
       where: {
-        teamId: teamId,
+        id: { in: teamMemberIds },
         isBiggestBozo: true,
         managementWeek: week,
         managementSeason: season
@@ -122,7 +140,11 @@ export async function GET(request: NextRequest) {
         season,
         isBiggestBozo: true,
         user: {
-          teamId: teamId
+          teamMemberships: {
+            some: {
+              teamId: teamId
+            }
+          }
         }
       },
       include: {

@@ -36,8 +36,7 @@ export async function POST(request: NextRequest) {
           isBiggestBozo: true, 
           isAdmin: true, 
           managementWeek: true, 
-          managementSeason: true,
-          teamId: true
+          managementSeason: true
         }
       })
 
@@ -57,21 +56,41 @@ export async function POST(request: NextRequest) {
         }, { status: 403 })
       }
 
-      // Get the bet to verify it belongs to the same team
+      // Get the bet to verify it belongs to a team the manager can access
       const bet = await prisma.weeklyBet.findUnique({
         where: { id: data.betId },
-        include: { user: { select: { teamId: true } } }
+        include: { 
+          user: { 
+            select: { id: true },
+            include: {
+              teamMemberships: {
+                select: { teamId: true }
+              }
+            }
+          } 
+        }
       })
 
       if (!bet) {
         return NextResponse.json({ error: 'Bet not found' }, { status: 404 })
       }
 
-      // If not admin, ensure the bet belongs to the same team
-      if (!manager.isAdmin && bet.user.teamId !== manager.teamId) {
-        return NextResponse.json({ 
-          error: 'You can only manage bets from your own team' 
-        }, { status: 403 })
+      // If not admin, check if manager and bet user share any teams
+      if (!manager.isAdmin) {
+        const managerTeams = await prisma.teamMembership.findMany({
+          where: { userId: data.managerId },
+          select: { teamId: true }
+        })
+        
+        const managerTeamIds = managerTeams.map(m => m.teamId)
+        const betUserTeamIds = bet.user.teamMemberships.map(m => m.teamId)
+        const sharedTeams = managerTeamIds.filter(id => betUserTeamIds.includes(id))
+        
+        if (sharedTeams.length === 0) {
+          return NextResponse.json({ 
+            error: 'You can only manage bets from your teams' 
+          }, { status: 403 })
+        }
       }
 
       // Update the bet status
@@ -144,10 +163,17 @@ export async function POST(request: NextRequest) {
     } else if (action === 'assign_biggest_bozo') {
       const { userId, week, season, teamId } = body
 
-      // Remove current biggest bozo privileges
+      // Remove current biggest bozo privileges from all team members
+      const teamMembers = await prisma.teamMembership.findMany({
+        where: { teamId: teamId },
+        select: { userId: true }
+      })
+      
+      const teamMemberIds = teamMembers.map(m => m.userId)
+      
       await prisma.user.updateMany({
         where: { 
-          teamId: teamId,
+          id: { in: teamMemberIds },
           isBiggestBozo: true 
         },
         data: { 
@@ -210,23 +236,30 @@ export async function GET(request: NextRequest) {
         isAdmin: true,
         managementWeek: true,
         managementSeason: true,
-        teamId: true,
-        team: {
-          select: {
-            id: true,
-            name: true,
-            users: {
+        teamMemberships: {
+          include: {
+            team: {
               select: {
                 id: true,
                 name: true,
-                weeklyBets: {
-                  where: { week, season },
-                  select: {
-                    id: true,
-                    prop: true,
-                    odds: true,
-                    status: true,
-                    betType: true
+                memberships: {
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        weeklyBets: {
+                          where: { week, season },
+                          select: {
+                            id: true,
+                            prop: true,
+                            odds: true,
+                            status: true,
+                            betType: true
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }

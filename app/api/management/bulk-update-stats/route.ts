@@ -45,13 +45,33 @@ export async function POST(request: NextRequest) {
     const targetUsers = await prisma.user.findMany({
       where: {
         id: { in: userIds }
+      },
+      include: {
+        teamMemberships: {
+          include: {
+            team: true
+          }
+        }
       }
     })
 
-    // If not admin, filter to only users from the same team
-    const allowedUsers = manager.isAdmin 
-      ? targetUsers 
-      : targetUsers.filter(user => user.teamId === manager.teamId)
+    // If not admin, filter to only users from the same teams as the manager
+    let allowedUsers = targetUsers
+    if (!manager.isAdmin) {
+      // Get manager's teams
+      const managerMemberships = await prisma.teamMembership.findMany({
+        where: { userId: manager.id },
+        include: { team: true }
+      })
+      const managerTeamIds = managerMemberships.map(m => m.teamId)
+      
+      // Filter target users to only those who share at least one team with the manager
+      allowedUsers = targetUsers.filter(user => 
+        user.teamMemberships.some(membership => 
+          managerTeamIds.includes(membership.teamId)
+        )
+      )
+    }
 
     const allowedUserIds = allowedUsers.map(user => user.id)
     const filteredUpdates = data.updates.filter(update => allowedUserIds.includes(update.userId))

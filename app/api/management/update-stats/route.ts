@@ -24,8 +24,7 @@ export async function POST(request: NextRequest) {
         isBiggestBozo: true, 
         isAdmin: true, 
         managementWeek: true, 
-        managementSeason: true,
-        teamId: true
+        managementSeason: true
       }
     })
 
@@ -51,7 +50,6 @@ export async function POST(request: NextRequest) {
       select: { 
         id: true, 
         name: true, 
-        teamId: true, 
         totalBozos: true, 
         totalHits: true 
       }
@@ -61,11 +59,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // If not admin, ensure the user belongs to the same team
-    if (!manager.isAdmin && targetUser.teamId !== manager.teamId) {
-      return NextResponse.json({ 
-        error: 'You can only manage stats for users in your own team' 
-      }, { status: 403 })
+    // If not admin, check if manager and target user share any teams
+    if (!manager.isAdmin) {
+      const managerTeams = await prisma.teamMembership.findMany({
+        where: { userId: data.managerId },
+        select: { teamId: true }
+      })
+      const targetUserTeams = await prisma.teamMembership.findMany({
+        where: { userId: data.userId },
+        select: { teamId: true }
+      })
+      
+      const managerTeamIds = managerTeams.map(m => m.teamId)
+      const targetUserTeamIds = targetUserTeams.map(m => m.teamId)
+      const sharedTeams = managerTeamIds.filter(id => targetUserTeamIds.includes(id))
+      
+      if (sharedTeams.length === 0) {
+        return NextResponse.json({ 
+          error: 'You can only manage stats for users in your teams' 
+        }, { status: 403 })
+      }
     }
 
     // Calculate new stats
