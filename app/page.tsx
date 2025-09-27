@@ -690,7 +690,14 @@ export default function Home() {
             </div>
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
               <button 
-                onClick={() => setShowSubmitBetModal(true)}
+                onClick={() => {
+                  console.log('🔍 Submit Bet Button Clicked:', { 
+                    isAuthenticated, 
+                    authUser: authUser?.name || 'none',
+                    authToken: authToken ? 'Present' : 'Missing'
+                  })
+                  setShowSubmitBetModal(true)
+                }}
                 className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg text-sm sm:text-base font-semibold border border-blue-300/30"
               >
                 <Target className="h-4 w-4 sm:h-5 sm:w-5" />

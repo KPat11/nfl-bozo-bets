@@ -197,8 +197,17 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
     }
 
     try {
-      const token = localStorage.getItem('authToken')
+      console.log('🔍 Delete Team Debug:', { 
+        teamId, 
+        teamName,
+        authToken: authToken ? 'Present' : 'Missing',
+        authTokenLength: authToken?.length || 0,
+        localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing'
+      })
+      
+      const token = authToken || localStorage.getItem('authToken')
       if (!token) {
+        console.log('❌ No token found for delete team')
         setError('Authentication required')
         return
       }
