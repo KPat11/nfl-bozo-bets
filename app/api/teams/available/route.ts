@@ -50,11 +50,11 @@ export async function GET(request: NextRequest) {
 
     // Fetch teams that the user is NOT already a member of
     const teams = await prisma.team.findMany({
-      where: {
+      where: userTeamIds.length > 0 ? {
         id: {
           notIn: userTeamIds // Exclude teams where the current user is already a member
         }
-      },
+      } : {}, // If user is not in any teams, show all teams
       include: {
         memberships: {
           include: {
