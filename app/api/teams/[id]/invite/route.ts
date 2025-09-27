@@ -21,24 +21,37 @@ export async function POST(
     // Verify team exists and inviter is a member
     const team = await prisma.team.findUnique({
       where: { id: teamId },
-      include: { users: true }
+      include: { 
+        memberships: {
+          include: {
+            user: true
+          }
+        }
+      }
     })
 
     if (!team) {
       return NextResponse.json({ error: 'Team not found' }, { status: 404 })
     }
 
-    const inviter = team.users.find(user => user.id === inviterId)
-    if (!inviter) {
+    const inviterMembership = team.memberships.find(membership => membership.userId === inviterId)
+    if (!inviterMembership) {
       return NextResponse.json({ error: 'You are not a member of this team' }, { status: 403 })
     }
 
+    const inviter = inviterMembership.user
+
     // Check if user is already a member
     const existingMember = await prisma.user.findUnique({
-      where: { email: inviteeEmail }
+      where: { email: inviteeEmail },
+      include: {
+        teamMemberships: {
+          where: { teamId: teamId }
+        }
+      }
     })
 
-    if (existingMember && existingMember.teamId === teamId) {
+    if (existingMember && existingMember.teamMemberships.length > 0) {
       return NextResponse.json({ error: 'User is already a member of this team' }, { status: 409 })
     }
 

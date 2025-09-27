@@ -47,17 +47,27 @@ export async function PUT(
         highestOdds: highestOdds !== undefined ? highestOdds : 130
       },
       include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         }
       }
     })
 
-    return NextResponse.json(updatedTeam)
+    // Transform team to include users array for backward compatibility
+    const teamWithUsers = {
+      ...updatedTeam,
+      users: updatedTeam.memberships.map(membership => membership.user)
+    }
+
+    return NextResponse.json(teamWithUsers)
   } catch (error) {
     console.error('Error updating team:', error)
     
@@ -94,10 +104,9 @@ export async function DELETE(
 
     const { id } = await params
 
-    // Remove team assignment from all users
-    await prisma.user.updateMany({
-      where: { teamId: id },
-      data: { teamId: null }
+    // Remove all team memberships for this team
+    await prisma.teamMembership.deleteMany({
+      where: { teamId: id }
     })
 
     // Delete the team

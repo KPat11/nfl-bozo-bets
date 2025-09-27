@@ -25,30 +25,45 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Fetching available teams to join...')
     
+    // Get teams the user is already a member of
+    const userMemberships = await prisma.teamMembership.findMany({
+      where: { userId: currentUser.id },
+      select: { teamId: true }
+    })
+    const userTeamIds = userMemberships.map(m => m.teamId)
+
     // Fetch teams that the user is NOT already a member of
     const teams = await prisma.team.findMany({
       where: {
-        users: {
-          none: {
-            id: currentUser.id // Exclude teams where the current user is already a member
-          }
+        id: {
+          notIn: userTeamIds // Exclude teams where the current user is already a member
         }
       },
       include: {
-        users: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+        memberships: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         }
       },
       orderBy: { createdAt: 'desc' }
     })
 
-    console.log(`✅ Found ${teams.length} teams available to join`)
+    // Transform teams to include users array for backward compatibility
+    const teamsWithUsers = teams.map(team => ({
+      ...team,
+      users: team.memberships.map(membership => membership.user)
+    }))
+
+    console.log(`✅ Found ${teamsWithUsers.length} teams available to join`)
     
-    return NextResponse.json({ teams })
+    return NextResponse.json({ teams: teamsWithUsers })
   } catch (error) {
     console.error('❌ Error fetching available teams:', error)
     return NextResponse.json({ 
