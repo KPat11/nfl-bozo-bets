@@ -45,6 +45,9 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
 
   const fetchTeams = async () => {
     try {
+      console.log('🔍 Fetching teams with token:', authToken ? 'Present' : 'Missing')
+      setError('') // Clear any previous errors
+      
       if (!authToken) {
         setError('Please log in to view teams')
         return
@@ -79,6 +82,13 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
         availableTeamsResponse.json()
       ])
       
+      console.log('📊 API Response Data:', {
+        userTeams: userTeams,
+        availableTeamsData: availableTeamsData,
+        userTeamsLength: Array.isArray(userTeams) ? userTeams.length : 'Not an array',
+        availableTeamsLength: availableTeamsData.teams ? availableTeamsData.teams.length : 'No teams property'
+      })
+      
       // Mark user's teams as members and available teams as non-members
       const userTeamsWithMembership = userTeams.map((team: Team) => ({ ...team, isMember: true }))
       const availableTeamsWithMembership = availableTeamsData.teams.map((team: Team) => ({ ...team, isMember: false }))
@@ -86,6 +96,12 @@ export default function TeamsSection({ onTeamCreated, currentUser, authToken }: 
       // Combine user's teams and available teams
       const allTeams = [...userTeamsWithMembership, ...availableTeamsWithMembership]
       setTeams(allTeams)
+      setError('') // Clear any previous errors
+      console.log('✅ Teams loaded successfully:', { 
+        userTeams: userTeamsWithMembership.length, 
+        availableTeams: availableTeamsWithMembership.length,
+        totalTeams: allTeams.length 
+      })
     } catch (error) {
       console.error('Error fetching teams:', error)
       setError('Failed to load teams')
