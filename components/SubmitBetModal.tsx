@@ -301,25 +301,33 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
 
   // Get teams the current user is a member of
   const getUserTeams = () => {
-    if (!currentUser?.id) {
-      console.log('🔍 getUserTeams - No currentUser, returning all teams:', teams.length)
-      return teams
-    }
+    console.log('🔍 getUserTeams - DEBUG MODE: Returning ALL teams for testing')
+    console.log('🔍 getUserTeams - Current user:', currentUser?.id, currentUser?.name)
+    console.log('🔍 getUserTeams - All teams:', teams.length, teams.map(t => ({ id: t.id, name: t.name, userCount: t.users?.length || 0 })))
     
-    // Filter teams where the current user is a member
-    const userTeams = teams.filter(team => 
-      team.users?.some(user => user.id === currentUser.id)
-    )
+    // TEMPORARY: Return all teams for debugging
+    // TODO: Fix the filtering logic once we confirm teams are being fetched
+    return teams
     
-    console.log('🔍 getUserTeams - Filtering teams:', {
-      currentUserId: currentUser.id,
-      allTeams: teams.length,
-      userTeams: userTeams.length,
-      teamNames: userTeams.map(t => t.name),
-      allTeamNames: teams.map(t => t.name)
-    })
+    // Original filtering logic (commented out for debugging)
+    // if (!currentUser?.id) {
+    //   console.log('🔍 getUserTeams - No currentUser, returning all teams:', teams.length)
+    //   return teams
+    // }
     
-    return userTeams
+    // const userTeams = teams.filter(team => 
+    //   team.users?.some(user => user.id === currentUser.id)
+    // )
+    
+    // console.log('🔍 getUserTeams - Filtering teams:', {
+    //   currentUserId: currentUser.id,
+    //   allTeams: teams.length,
+    //   userTeams: userTeams.length,
+    //   teamNames: userTeams.map(t => t.name),
+    //   allTeamNames: teams.map(t => t.name)
+    // })
+    
+    // return userTeams
   }
 
   const handlePropTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
