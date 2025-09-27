@@ -703,27 +703,52 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Team/Group *
             </label>
-            <div className="relative z-[10001]">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-[10002]" />
-              <select
-                name="teamId"
-                value={formData.teamId}
-                onChange={handleTeamChange}
-                required
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors relative z-[10002]"
-              >
-                <option value="">Select a team/group</option>
-                {(() => {
-                  const userTeams = getUserTeams()
-                  console.log('🔍 SubmitBetModal - Rendering teams dropdown:', { teams: userTeams, count: userTeams.length })
-                  return userTeams.map(team => (
-                    <option key={team.id} value={team.id}>
-                      {team.name} ({team.users.length} members)
-                    </option>
-                  ))
-                })()}
-              </select>
-            </div>
+            {(() => {
+              const userTeams = getUserTeams()
+              console.log('🔍 SubmitBetModal - Rendering teams dropdown:', { teams: userTeams, count: userTeams.length })
+              
+              if (userTeams.length === 0) {
+                return (
+                  <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                      <span className="text-yellow-400 font-medium">No Teams Available</span>
+                    </div>
+                    <p className="text-yellow-300 text-sm mb-3">
+                      You need to create or join a team before you can submit bets.
+                    </p>
+                    <div className="space-y-2">
+                      <p className="text-yellow-300 text-xs">
+                        • Go to the <strong>Teams & Groups</strong> tab to create a new team
+                      </p>
+                      <p className="text-yellow-300 text-xs">
+                        • Or join an existing team if you have an invitation
+                      </p>
+                    </div>
+                  </div>
+                )
+              }
+              
+              return (
+                <div className="relative z-[10001]">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-[10002]" />
+                  <select
+                    name="teamId"
+                    value={formData.teamId}
+                    onChange={handleTeamChange}
+                    required
+                    className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors relative z-[10002]"
+                  >
+                    <option value="">Select a team/group</option>
+                    {userTeams.map(team => (
+                      <option key={team.id} value={team.id}>
+                        {team.name} ({team.users.length} members)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })()}
           </div>
 
           {/* Member Selection */}
@@ -731,25 +756,42 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Team Member *
             </label>
-            <div className="relative z-[10001]">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-[10002]" />
-              <select
-                name="userId"
-                value={formData.userId}
-                onChange={handleChange}
-                required
-                disabled={!formData.teamId}
-                className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative z-[10002]"
-              >
-                <option value="">Select a team member</option>
-                {getFilteredUsers().map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {!formData.teamId && (
+            {(() => {
+              const userTeams = getUserTeams()
+              
+              if (userTeams.length === 0) {
+                return (
+                  <div className="bg-gray-700 border border-gray-600 rounded-lg p-4 opacity-50">
+                    <div className="flex items-center space-x-2">
+                      <User className="h-5 w-5 text-gray-400" />
+                      <span className="text-gray-400">No teams available</span>
+                    </div>
+                  </div>
+                )
+              }
+              
+              return (
+                <div className="relative z-[10001]">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 z-[10002]" />
+                  <select
+                    name="userId"
+                    value={formData.userId}
+                    onChange={handleChange}
+                    required
+                    disabled={!formData.teamId}
+                    className="w-full pl-12 pr-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative z-[10002]"
+                  >
+                    <option value="">Select a team member</option>
+                    {getFilteredUsers().map(user => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )
+            })()}
+            {!formData.teamId && getUserTeams().length > 0 && (
               <p className="mt-2 text-sm text-yellow-400">
                 ⚠️ Please select a team/group first to see available members
               </p>
@@ -1028,10 +1070,10 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
             </button>
             <button
               type="submit"
-              disabled={loading || !weekValidation?.canSubmit}
+              disabled={loading || !weekValidation?.canSubmit || getUserTeams().length === 0}
               className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium order-1 sm:order-2"
             >
-              {loading ? 'Submitting...' : 'Submit Bet'}
+              {loading ? 'Submitting...' : getUserTeams().length === 0 ? 'No Teams Available' : 'Submit Bet'}
             </button>
           </div>
         </form>
