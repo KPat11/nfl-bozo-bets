@@ -351,6 +351,7 @@ export default function Home() {
   }
 
   const [isCheckingAuth, setIsCheckingAuth] = useState(false)
+  const [isInitialLoad, setIsInitialLoad] = useState(true)
   
   const checkAuthStatus = async () => {
     // Prevent multiple simultaneous auth checks
@@ -380,6 +381,22 @@ export default function Home() {
         setAuthUser(parsedUser)
         setAuthToken(token)
         setIsAuthenticated(true)
+        
+        // Set currentUser immediately from stored data
+        const userObject: User = {
+          id: parsedUser.id,
+          name: parsedUser.name,
+          email: parsedUser.email,
+          phone: '',
+          totalBozos: 0,
+          totalHits: 0,
+          isBiggestBozo: parsedUser.isBiggestBozo,
+          isAdmin: parsedUser.isAdmin,
+          managementWeek: undefined,
+          managementSeason: undefined,
+          weeklyBets: []
+        }
+        setCurrentUser(userObject)
         
         // Then validate the token in the background
         const response = await fetch('/api/auth/me', {
@@ -444,6 +461,7 @@ export default function Home() {
     }
     
     setIsCheckingAuth(false)
+    setIsInitialLoad(false)
   }
 
   useEffect(() => {
@@ -643,94 +661,93 @@ export default function Home() {
   // Removed unused functions - they're not needed in the main component
 
 
-  // Auth Gate - Show login screen if not authenticated
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          {/* Logo and Title */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
-              <Trophy className="h-10 w-10 text-white" />
+  // Always show the main app, with authentication overlay when needed
+  return (
+    <div className="min-h-screen bg-gray-900">
+      {/* Loading State */}
+      {isInitialLoad && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4 animate-pulse">
+              <Trophy className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
-              NFL Bozo Bets
-            </h1>
-            <p className="text-gray-300 text-lg">
-              Track your NFL picks and compete with friends
-            </p>
+            <p className="text-white text-lg">Loading NFL Bozo Bets...</p>
           </div>
+        </div>
+      )}
 
-          {/* Auth Card */}
-          <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 shadow-2xl">
-            <div className="space-y-6">
+      {/* Authentication Overlay - Show when not authenticated and not loading */}
+      {!isAuthenticated && !isInitialLoad && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="max-w-md w-full">
+            {/* Logo and Title */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-4">
+                <Trophy className="h-10 w-10 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent mb-2">
+                NFL Bozo Bets
+              </h1>
+              <p className="text-gray-300 text-lg">
+                Track your NFL picks and compete with friends
+              </p>
+            </div>
+
+            {/* Auth Card */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 shadow-2xl">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl font-semibold text-white mb-2">
+                    Welcome Back
+                  </h2>
+                  <p className="text-gray-400">
+                    Sign in to access your betting dashboard
+                  </p>
+                </div>
+
+                <button 
+                  onClick={() => setShowAuthModal(true)}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-3"
+                >
+                  <LogIn className="h-5 w-5" />
+                  <span>Sign In / Sign Up</span>
+                </button>
+
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm">
+                    New to NFL Bozo Bets? Create an account to get started!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Features */}
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="text-center">
-                <h2 className="text-2xl font-semibold text-white mb-2">
-                  Welcome Back
-                </h2>
-                <p className="text-gray-400">
-                  Sign in to access your betting dashboard
-                </p>
+                <div className="bg-blue-500/20 rounded-lg p-4 sm:p-6">
+                  <Target className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 mx-auto mb-2" />
+                  <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Submit Bets</h3>
+                  <p className="text-gray-400 text-xs sm:text-sm">Place your weekly NFL bets</p>
+                </div>
               </div>
-
-              <button 
-                onClick={() => setShowAuthModal(true)}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center space-x-3"
-              >
-                <LogIn className="h-5 w-5" />
-                <span>Sign In / Sign Up</span>
-              </button>
-
               <div className="text-center">
-                <p className="text-gray-400 text-sm">
-                  New to NFL Bozo Bets? Create an account to get started!
-                </p>
+                <div className="bg-purple-500/20 rounded-lg p-4 sm:p-6">
+                  <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-purple-400 mx-auto mb-2" />
+                  <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Track Results</h3>
+                  <p className="text-gray-400 text-xs sm:text-sm">Monitor hits and misses</p>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Features */}
-          <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="bg-blue-500/20 rounded-lg p-4 sm:p-6">
-                <Target className="h-8 w-8 sm:h-10 sm:w-10 text-blue-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Submit Bets</h3>
-                <p className="text-gray-400 text-xs sm:text-sm">Place your weekly NFL bets</p>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="bg-purple-500/20 rounded-lg p-4 sm:p-6">
-                <Trophy className="h-8 w-8 sm:h-10 sm:w-10 text-purple-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Track Results</h3>
-                <p className="text-gray-400 text-xs sm:text-sm">Monitor hits and misses</p>
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="bg-green-500/20 rounded-lg p-4 sm:p-6">
-                <Users className="h-8 w-8 sm:h-10 sm:w-10 text-green-400 mx-auto mb-2" />
-                <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Join Teams</h3>
-                <p className="text-gray-400 text-xs sm:text-sm">Compete with friends</p>
+              <div className="text-center">
+                <div className="bg-green-500/20 rounded-lg p-4 sm:p-6">
+                  <Users className="h-8 w-8 sm:h-10 sm:w-10 text-green-400 mx-auto mb-2" />
+                  <h3 className="text-white font-semibold mb-1 text-sm sm:text-base">Join Teams</h3>
+                  <p className="text-gray-400 text-xs sm:text-sm">Compete with friends</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-
-        {/* Auth Modal */}
-        {showAuthModal && (
-          <AuthModal 
-            isOpen={showAuthModal}
-            onClose={() => setShowAuthModal(false)}
-            onSuccess={(user, token) => {
-              setAuthUser(user)
-              setAuthToken(token)
-              setIsAuthenticated(true)
-              setShowAuthModal(false)
-            }}
-          />
-        )}
-      </div>
-    )
-  }
+      )}
 
   return (
     <div className="min-h-screen bg-gray-900">
