@@ -94,8 +94,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(teamsWithUsers)
   } catch (error) {
     console.error('❌ Error fetching teams:', error)
-    // Return empty array instead of error to prevent frontend crashes
-    return NextResponse.json([])
+    // Return the actual error for debugging
+    return NextResponse.json({ 
+      error: 'Failed to fetch teams',
+      details: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    }, { status: 500 })
   }
 }
 

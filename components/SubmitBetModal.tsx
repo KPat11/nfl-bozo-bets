@@ -150,24 +150,37 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
       })
       
       if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ API Error:', { status: response.status, errorText })
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorData = await response.json().catch(() => null)
+        const errorText = await response.text().catch(() => 'Failed to get error text')
+        console.error('❌ API Error:', { 
+          status: response.status, 
+          statusText: response.statusText,
+          errorData: errorData,
+          errorText: errorText
+        })
+        throw new Error(`HTTP error! status: ${response.status} - ${errorData?.details || errorText}`)
       }
       
       const data = await response.json()
-      console.log('🔍 SubmitBetModal - Fetched teams response:', { 
+      console.log('🔍 SubmitBetModal - RAW API RESPONSE:', { 
         status: response.status, 
-        data, 
+        statusText: response.statusText,
+        data: data,
+        dataType: typeof data,
         isArray: Array.isArray(data),
-        length: Array.isArray(data) ? data.length : 'not array',
-        teams: Array.isArray(data) ? data.map(t => ({ 
+        length: Array.isArray(data) ? data.length : 'not array'
+      })
+      
+      if (Array.isArray(data)) {
+        console.log('🔍 SubmitBetModal - TEAMS DATA:', data.map(t => ({ 
           id: t.id, 
           name: t.name, 
           userCount: t.users?.length || 0,
           users: t.users?.map((u: any) => ({ id: u.id, name: u.name })) || []
-        })) : 'not array'
-      })
+        })))
+      } else {
+        console.log('🔍 SubmitBetModal - NOT AN ARRAY - FULL DATA:', JSON.stringify(data, null, 2))
+      }
       setTeams(Array.isArray(data) ? data : [])
       
       // Debug: Check if current user is in any teams
