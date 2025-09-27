@@ -30,7 +30,11 @@ export async function GET(request: NextRequest) {
       include: {
         user: {
           include: {
-            team: true
+            teamMemberships: {
+              include: {
+                team: true
+              }
+            }
           }
         },
         team: true
@@ -92,14 +96,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate odds against team limits if odds are provided
-    if (odds !== undefined && odds !== null) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: { team: true }
+    if (odds !== undefined && odds !== null && teamId) {
+      const team = await prisma.team.findUnique({
+        where: { id: teamId }
       })
 
-      if (user?.team) {
-        const team = user.team
+      if (team) {
         if (team.lowestOdds !== null && odds < team.lowestOdds) {
           return NextResponse.json({ 
             error: `Odds ${odds} is below team minimum of ${team.lowestOdds}` 
