@@ -346,6 +346,8 @@ export default function Home() {
     setAuthUser(null)
     setAuthToken(null)
     setIsAuthenticated(false)
+    setCurrentUser(null)
+    setUsers([])
     
     // If we have a token and user in localStorage, validate it
     if (token && user) {
@@ -398,6 +400,8 @@ export default function Home() {
       setAuthUser(null)
       setAuthToken(null)
       setIsAuthenticated(false)
+      setCurrentUser(null)
+      setUsers([])
     }
   }
 
@@ -413,10 +417,20 @@ export default function Home() {
       }
     }
     
+    // Also listen for visibility changes to sync auth state
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Page became visible, rechecking auth status')
+        checkAuthStatus()
+      }
+    }
+    
     window.addEventListener('storage', handleStorageChange)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
     
     return () => {
       window.removeEventListener('storage', handleStorageChange)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, []) // Empty dependency array - only run once on mount
 
@@ -994,7 +1008,7 @@ export default function Home() {
               currentUser: currentUser?.name || 'None',
               localStorageToken: localStorage.getItem('authToken') ? 'Present' : 'Missing'
             })}
-            {isAuthenticated && authToken ? (
+            {isAuthenticated && authToken && currentUser ? (
               <TeamsSection onTeamCreated={handleTeamCreated} currentUser={currentUser} authToken={authToken} />
             ) : (
               <div className="bg-gray-800 rounded-lg p-8 text-center">
