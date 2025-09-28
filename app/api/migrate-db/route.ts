@@ -9,21 +9,21 @@ export async function POST(request: NextRequest) {
     await prisma.$queryRaw`SELECT 1`
     console.log('✅ Database connection successful')
     
-    // Check if team_memberships table exists
-    const tableExists = await prisma.$queryRaw`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'team_memberships'
-      );
+    // Check if any tables exist
+    const tablesExist = await prisma.$queryRaw`
+      SELECT COUNT(*) as table_count 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+      AND table_name IN ('users', 'teams', 'team_memberships');
     `
     
-    console.log('🔍 team_memberships table exists:', tableExists)
+    console.log('🔍 Existing tables count:', tablesExist)
     
-    if (Array.isArray(tableExists) && tableExists[0]?.exists) {
+    if (Array.isArray(tablesExist) && tablesExist[0]?.table_count >= 3) {
       return NextResponse.json({ 
-        message: 'Migration already applied - team_memberships table exists',
-        status: 'already_migrated'
+        message: 'Migration already applied - all tables exist',
+        status: 'already_migrated',
+        tableCount: tablesExist[0]?.table_count
       })
     }
     
