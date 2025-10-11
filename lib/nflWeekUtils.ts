@@ -22,9 +22,41 @@ export function getCurrentNFLWeek(season: number = 2025): NFLWeekInfo | null {
   
   // For 2025 season, manually set current week based on actual NFL schedule
   if (season === 2025) {
-    // Week 4 started on September 25, 2025 (today)
-    const week4Start = new Date(2025, 8, 25) // September 25, 2025
-    const week4End = new Date(2025, 8, 30) // September 30, 2025
+    // Week 6 started on October 16, 2025 (current week)
+    const week6Start = new Date(2025, 9, 16) // October 16, 2025
+    const week6End = new Date(2025, 9, 21) // October 21, 2025
+    
+    if (now >= week6Start && now < week6End) {
+      return {
+        week: 6,
+        season: 2025,
+        startDate: week6Start,
+        endDate: week6End,
+        isActive: true,
+        isPast: false,
+        isFuture: false
+      }
+    }
+    
+    // Week 5 was October 9-14, 2025
+    const week5Start = new Date(2025, 9, 9) // October 9, 2025
+    const week5End = new Date(2025, 9, 15) // October 15, 2025
+    
+    if (now >= week5Start && now < week5End) {
+      return {
+        week: 5,
+        season: 2025,
+        startDate: week5Start,
+        endDate: week5End,
+        isActive: true,
+        isPast: false,
+        isFuture: false
+      }
+    }
+    
+    // Week 4 was October 2-7, 2025
+    const week4Start = new Date(2025, 9, 2) // October 2, 2025
+    const week4End = new Date(2025, 9, 8) // October 8, 2025
     
     if (now >= week4Start && now < week4End) {
       return {
@@ -38,29 +70,13 @@ export function getCurrentNFLWeek(season: number = 2025): NFLWeekInfo | null {
       }
     }
     
-    // Week 3 was September 18-22, 2025
-    const week3Start = new Date(2025, 8, 18) // September 18, 2025
-    const week3End = new Date(2025, 8, 23) // September 23, 2025
-    
-    if (now >= week3Start && now < week3End) {
+    // Default to Week 6 if we're past Week 5
+    if (now >= week5End) {
       return {
-        week: 3,
+        week: 6,
         season: 2025,
-        startDate: week3Start,
-        endDate: week3End,
-        isActive: true,
-        isPast: false,
-        isFuture: false
-      }
-    }
-    
-    // Default to Week 4 if we're past Week 3
-    if (now >= week3End) {
-      return {
-        week: 4,
-        season: 2025,
-        startDate: week4Start,
-        endDate: week4End,
+        startDate: week6Start,
+        endDate: week6End,
         isActive: true,
         isPast: false,
         isFuture: false

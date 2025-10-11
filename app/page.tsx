@@ -68,7 +68,7 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [currentWeek, setCurrentWeek] = useState(() => {
     const weekInfo = getCurrentNFLWeek(2025)
-    return weekInfo ? weekInfo.week : 4 // Default to week 4 if calculation fails
+    return weekInfo ? weekInfo.week : 6 // Default to week 6 if calculation fails
   })
   const [currentSeason] = useState(2025)
   const [loading, setLoading] = useState(false)

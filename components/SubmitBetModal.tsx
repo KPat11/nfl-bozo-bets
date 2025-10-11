@@ -387,8 +387,8 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          player: propText.split(' ')[0] + ' ' + propText.split(' ')[1], // First two words as player name
-          prop: propText.split(' ').slice(2).join(' '), // Rest as prop type
+          player: propText.split(' ')[0] || '', // First word as team/player name
+          prop: propText.split(' ').slice(1).join(' ') || '', // Rest as prop type
           week,
           season
         })

@@ -68,12 +68,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== WEEKLY BETS API DEBUG ===')
+    
     const body = await request.json()
+    console.log('Request body:', body)
+    
     const { userId, teamId, week, season, prop, odds, fanduelId, betType } = createWeeklyBetSchema.parse(body)
+    console.log('Parsed data:', { userId, teamId, week, season, prop, odds, fanduelId, betType })
 
     // Validate NFL week timing
     const weekValidation = canSubmitBetForWeek(week, season)
+    console.log('Week validation:', weekValidation)
+    
     if (!weekValidation.canSubmit) {
+      console.log('Week validation failed:', weekValidation.reason)
       return NextResponse.json({ 
         error: 'Cannot submit bet for this week',
         reason: weekValidation.reason,
@@ -115,6 +123,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('Creating weekly bet with data:', {
+      userId,
+      teamId: teamId || null,
+      week,
+      season,
+      prop,
+      odds: odds || null,
+      fanduelId: fanduelId || null,
+      status: 'PENDING',
+      betType: betType as 'BOZO' | 'FAVORITE'
+    })
+    
     const weeklyBet = await prisma.weeklyBet.create({
       data: {
         userId,
@@ -128,6 +148,8 @@ export async function POST(request: NextRequest) {
         betType: betType as 'BOZO' | 'FAVORITE'
       }
     })
+    
+    console.log('Weekly bet created successfully:', weeklyBet.id)
 
     // Send fast update via UDP
     try {
