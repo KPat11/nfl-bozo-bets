@@ -1,6 +1,8 @@
 import { prisma } from './db'
 import { updateBozoStats } from './bozoStats'
 import { getTransportManager, FanDuelData } from './transportProtocols'
+import { oddsApiService } from './oddsApiService'
+import { getCachedOdds, cacheOddsData } from './redis'
 
 export interface FanDuelProp {
   id: string
@@ -53,89 +55,100 @@ export async function sendFanDuelDataViaTCP(prop: FanDuelProp): Promise<boolean>
 }
 
 export async function fetchFanDuelProps(week: number, season: number): Promise<FanDuelProp[]> {
-  // Mock data for demonstration
-  const mockProps: FanDuelProp[] = [
-    {
-      id: 'fd-1',
-      player: 'Josh Allen',
-      team: 'BUF',
-      prop: 'Passing Yards',
-      line: 250.5,
-      odds: -110,
-      overOdds: -110,
-      underOdds: -110,
-      week,
-      season,
-      gameTime: '2025-01-15T18:00:00Z',
-      status: 'PENDING'
-    },
-    {
-      id: 'fd-2',
-      player: 'Travis Kelce',
-      team: 'KC',
-      prop: 'Receiving Yards',
-      line: 75.5,
-      odds: -110,
-      overOdds: -110,
-      underOdds: -110,
-      week,
-      season,
-      gameTime: '2025-01-15T18:00:00Z',
-      status: 'PENDING'
-    },
-    {
-      id: 'fd-3',
-      player: 'Derrick Henry',
-      team: 'TEN',
-      prop: 'Rushing Yards',
-      line: 85.5,
-      odds: -110,
-      overOdds: -110,
-      underOdds: -110,
-      week,
-      season,
-      gameTime: '2025-01-15T18:00:00Z',
-      status: 'PENDING'
+  console.log(`📡 [FanDuel] Fetching props for week ${week}, season ${season}`)
+  
+  try {
+    // STEP 1: Check Redis cache first
+    const cached = await getCachedOdds(week, season)
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      console.log(`✅ [FanDuel] Using cached data (${cached.length} props)`)
+      return cached
     }
-  ]
-
-  // Store/update props in database
-  for (const prop of mockProps) {
-    await prisma.fanduelProp.upsert({
-      where: { fanduelId: prop.id },
-      update: {
-        player: prop.player,
-        team: prop.team,
-        prop: prop.prop,
-        line: prop.line,
-        odds: prop.odds,
-        overOdds: prop.overOdds,
-        underOdds: prop.underOdds,
-        week: prop.week,
-        season: prop.season,
-        gameTime: new Date(prop.gameTime),
-        status: prop.status as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
-        result: prop.result
-      },
-      create: {
-        fanduelId: prop.id,
-        player: prop.player,
-        team: prop.team,
-        prop: prop.prop,
-        line: prop.line,
-        odds: prop.odds,
-        overOdds: prop.overOdds,
-        underOdds: prop.underOdds,
-        week: prop.week,
-        season: prop.season,
-        gameTime: new Date(prop.gameTime),
-        status: prop.status as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
-        result: prop.result
-      }
-    })
+    
+    // STEP 2: Check if we can make API requests (rate limiting)
+    const canRequest = await oddsApiService.canMakeRequest()
+    if (!canRequest.canRequest) {
+      console.warn(`⚠️ [FanDuel] Cannot make API request: ${canRequest.reason}`)
+      // Try to get data from database as fallback
+      return await getAvailableProps(week, season)
+    }
+    
+    // STEP 3: Fetch from real Odds API
+    console.log('📡 [FanDuel] Fetching fresh data from The Odds API...')
+    const oddsData = await oddsApiService.fetchNflOdds(week, season)
+    
+    if (!oddsData || oddsData.length === 0) {
+      console.warn('⚠️ [FanDuel] No odds data returned from API')
+      return await getAvailableProps(week, season)
+    }
+    
+    // STEP 4: Transform to FanDuelProp format
+    const props: FanDuelProp[] = oddsData.map(odd => ({
+      id: odd.id,
+      player: odd.player,
+      team: odd.team,
+      prop: odd.prop,
+      line: odd.line,
+      odds: odd.odds,
+      overOdds: odd.overOdds,
+      underOdds: odd.underOdds,
+      week: odd.week,
+      season: odd.season,
+      gameTime: odd.lastUpdate.toISOString(),
+      status: 'PENDING'
+    }))
+    
+    console.log(`✅ [FanDuel] Fetched ${props.length} props from Odds API`)
+    
+    // STEP 5: Store in database for persistence
+    for (const prop of props) {
+      await prisma.fanduelProp.upsert({
+        where: { fanduelId: prop.id },
+        update: {
+          player: prop.player,
+          team: prop.team,
+          prop: prop.prop,
+          line: prop.line,
+          odds: prop.odds,
+          overOdds: prop.overOdds,
+          underOdds: prop.underOdds,
+          week: prop.week,
+          season: prop.season,
+          gameTime: new Date(prop.gameTime),
+          status: prop.status as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
+          result: prop.result,
+          updatedAt: new Date()
+        },
+        create: {
+          fanduelId: prop.id,
+          player: prop.player,
+          team: prop.team,
+          prop: prop.prop,
+          line: prop.line,
+          odds: prop.odds,
+          overOdds: prop.overOdds,
+          underOdds: prop.underOdds,
+          week: prop.week,
+          season: prop.season,
+          gameTime: new Date(prop.gameTime),
+          status: prop.status as 'PENDING' | 'HIT' | 'BOZO' | 'PUSH' | 'CANCELLED',
+          result: prop.result
+        }
+      })
+    }
+    
+    // STEP 6: Cache for 7 days
+    await cacheOddsData(week, season, props)
+    console.log(`✅ [FanDuel] Cached ${props.length} props for future requests`)
+    
+    return props
+    
+  } catch (error) {
+    console.error('❌ [FanDuel] Error fetching odds:', error)
+    // Fallback to database data
+    console.log('🔄 [FanDuel] Falling back to database data...')
+    return await getAvailableProps(week, season)
   }
-
-  return mockProps
 }
 
 export async function updatePropResults(week: number, season: number): Promise<void> {

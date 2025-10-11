@@ -265,8 +265,8 @@ export async function findMatchingProp(
       originalText: propText
     }))
     
-    // Combine with mock data
-    const allProps = [...enhancedDbProps, ...ENHANCED_MOCK_PROPS]
+    // Use only database props (NO MOCK DATA)
+    const allProps = enhancedDbProps
     
     // Try different matching strategies
     let bestMatch: EnhancedFanDuelProp | null = null
@@ -412,16 +412,7 @@ export async function getLiveOddsForProp(
       }
     }
     
-    // Fallback to mock data
-    const mockProp = ENHANCED_MOCK_PROPS.find(p => p.fanduelId === fanduelId)
-    if (mockProp) {
-      return {
-        odds: mockProp.odds,
-        overOdds: mockProp.overOdds || mockProp.odds,
-        underOdds: mockProp.underOdds || mockProp.odds
-      }
-    }
-    
+    // No mock data - return null if not found in database
     return null
   } catch (error) {
     console.error('Error fetching live odds:', error)
@@ -459,15 +450,9 @@ export async function searchProps(
       confidence: 1.0
     }))
     
-    // Search mock data
-    const mockResults = ENHANCED_MOCK_PROPS.filter(prop => {
-      const searchText = `${prop.player} ${prop.team} ${prop.prop}`.toLowerCase()
-      return searchText.includes(normalizedQuery)
-    })
-    
-    // Combine and sort by confidence
-    const allResults = [...enhancedDbProps, ...mockResults]
-    return allResults.sort((a, b) => b.confidence - a.confidence)
+    // No mock data - use only database results
+    // Sort by confidence
+    return enhancedDbProps.sort((a, b) => b.confidence - a.confidence)
     
   } catch (error) {
     console.error('Error searching props:', error)
