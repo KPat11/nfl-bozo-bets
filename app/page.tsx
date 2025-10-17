@@ -489,23 +489,26 @@ export default function Home() {
     }
   }, [isAuthenticated, checkForBiggestBozo])
 
-  // Update current week periodically
+  // Update current week periodically (only auto-update, not manual overrides)
   useEffect(() => {
     const updateCurrentWeek = () => {
       const weekInfo = getCurrentNFLWeek(2025)
       if (weekInfo && weekInfo.week !== currentWeek) {
-        setCurrentWeek(weekInfo.week)
+        // Only auto-update if the difference is significant (more than 1 week)
+        // This prevents overriding manual week selection for adjacent weeks
+        const weekDifference = Math.abs(weekInfo.week - currentWeek)
+        if (weekDifference > 1) {
+          console.log(`Auto-updating week from ${currentWeek} to ${weekInfo.week}`)
+          setCurrentWeek(weekInfo.week)
+        }
       }
     }
-
-    // Update immediately
-    updateCurrentWeek()
 
     // Update every hour
     const interval = setInterval(updateCurrentWeek, 60 * 60 * 1000)
 
     return () => clearInterval(interval)
-  }, [currentWeek])
+  }, []) // Remove currentWeek dependency to prevent infinite loop
 
   useEffect(() => {
     checkForBiggestBozo()

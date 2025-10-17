@@ -669,6 +669,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
               <div className="text-xs text-blue-200/80 space-y-1">
                 <p>✅ <strong>Team Props</strong> (Auto-validated with live odds): Moneyline, Spread, Total Points</p>
                 <p>⚠️ <strong>Player Props</strong> (Manual entry required): Receiving yards, passing TDs, rushing yards, etc.</p>
+                <p>💡 <strong>Manual Odds Entry:</strong> If live odds aren't available, you can enter odds manually</p>
                 <p className="mt-2 text-blue-200/60 italic">
                   Player props must be entered manually and will be validated by the designated Bozo of the week after games complete.
                 </p>
@@ -1015,7 +1016,7 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-gray-300">
-                Odds (auto-filled from FanDuel)
+                Odds (optional - auto-filled from FanDuel or enter manually)
               </label>
               <button
                 type="button"
@@ -1115,7 +1116,12 @@ export default function SubmitBetModal({ isOpen, onClose, onBetSubmitted, week, 
                   </div>
                 </div>
               ) : (
-                <span>Use buttons or type directly. Range: {selectedTeamLimits?.lowestOdds || '-∞'} to {selectedTeamLimits?.highestOdds || '+∞'}</span>
+                <div className="space-y-1">
+                  <span>Use buttons or type directly. Range: {selectedTeamLimits?.lowestOdds || '-∞'} to {selectedTeamLimits?.highestOdds || '+∞'}</span>
+                  <div className="text-xs text-blue-300">
+                    💡 <strong>Manual Entry:</strong> You can enter odds manually if no live data is available
+                  </div>
+                </div>
               )}
               
               {/* Team Odds Limits Display */}
