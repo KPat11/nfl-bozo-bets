@@ -90,29 +90,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has a bet for this week/season/betType
-    // Handle potential case sensitivity issues with teamId column
-    let existingBet
-    try {
-      existingBet = await prisma.weeklyBet.findFirst({
-        where: {
-          userId,
-          week,
-          season,
-          betType: betType as 'BOZO' | 'FAVORITE'
-        }
-      })
-    } catch (error) {
-      console.log('Error checking existing bet - possible column issue:', error)
-      // Try without teamId if column doesn't exist
-      existingBet = await prisma.weeklyBet.findFirst({
-        where: {
-          userId,
-          week,
-          season,
-          betType: betType as 'BOZO' | 'FAVORITE'
-        }
-      })
-    }
+    const existingBet = await prisma.weeklyBet.findFirst({
+      where: {
+        userId,
+        week,
+        season,
+        betType: betType as 'BOZO' | 'FAVORITE'
+      }
+    })
 
     if (existingBet) {
       return NextResponse.json({ error: `User already has a ${betType.toLowerCase()} bet for this week` }, { status: 409 })
@@ -150,38 +135,19 @@ export async function POST(request: NextRequest) {
       betType: betType as 'BOZO' | 'FAVORITE'
     })
     
-    // Create the bet - handle potential teamId column issues
-    let weeklyBet
-    try {
-      weeklyBet = await prisma.weeklyBet.create({
-        data: {
-          userId,
-          teamId: teamId || null,
-          week,
-          season,
-          prop,
-          odds: odds || null,
-          fanduelId: fanduelId || null,
-          status: 'PENDING',
-          betType: betType as 'BOZO' | 'FAVORITE'
-        }
-      })
-    } catch (error) {
-      console.log('Error creating bet with teamId - trying without:', error)
-      // Try creating without teamId if column doesn't exist
-      weeklyBet = await prisma.weeklyBet.create({
-        data: {
-          userId,
-          week,
-          season,
-          prop,
-          odds: odds || null,
-          fanduelId: fanduelId || null,
-          status: 'PENDING',
-          betType: betType as 'BOZO' | 'FAVORITE'
-        }
-      })
-    }
+    const weeklyBet = await prisma.weeklyBet.create({
+      data: {
+        userId,
+        teamId: teamId || null,
+        week,
+        season,
+        prop,
+        odds: odds || null,
+        fanduelId: fanduelId || null,
+        status: 'PENDING',
+        betType: betType as 'BOZO' | 'FAVORITE'
+      }
+    })
     
     console.log('Weekly bet created successfully:', weeklyBet.id)
 
