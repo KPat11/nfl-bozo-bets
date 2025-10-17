@@ -151,26 +151,36 @@ export async function POST(request: NextRequest) {
     
     console.log('Weekly bet created successfully:', weeklyBet.id)
 
-    // Send fast update via UDP
-    try {
-      await sendBetStatusUpdate({
-        betId: weeklyBet.id,
-        userId,
-        status: 'PENDING',
-        timestamp: Date.now()
-      })
-    } catch (udpError) {
-      console.error('Failed to send UDP bet status update:', udpError)
-      // Don't fail the request if UDP fails
-    }
+    // TODO: Re-enable UDP updates once transport manager is properly configured
+    // Send fast update via UDP (disabled for now)
+    // try {
+    //   await sendBetStatusUpdate({
+    //     betId: weeklyBet.id,
+    //     userId,
+    //     status: 'PENDING',
+    //     timestamp: Date.now()
+    //   })
+    //   console.log('UDP bet status update sent successfully')
+    // } catch (udpError) {
+    //   console.error('Failed to send UDP bet status update (non-critical):', udpError)
+    // }
 
     return NextResponse.json(weeklyBet, { status: 201 })
   } catch (error) {
+    console.error('=== WEEKLY BETS API ERROR ===')
+    console.error('Error type:', typeof error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    
     if (error instanceof z.ZodError) {
+      console.error('Zod validation error:', error.issues)
       return NextResponse.json({ error: 'Invalid input', details: error.issues }, { status: 400 })
     }
 
-    console.error('Error creating weekly bet:', error)
-    return NextResponse.json({ error: 'Failed to create weekly bet' }, { status: 500 })
+    console.error('Unexpected error creating weekly bet:', error)
+    return NextResponse.json({ 
+      error: 'Failed to create weekly bet',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 })
   }
 }
