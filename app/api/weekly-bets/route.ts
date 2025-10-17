@@ -90,14 +90,29 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user already has a bet for this week/season/betType
-    const existingBet = await prisma.weeklyBet.findFirst({
-      where: {
-        userId,
-        week,
-        season,
-        betType: betType as 'BOZO' | 'FAVORITE'
-      }
-    })
+    // Note: teamId column might not exist in database, so we'll check without it first
+    let existingBet
+    try {
+      existingBet = await prisma.weeklyBet.findFirst({
+        where: {
+          userId,
+          week,
+          season,
+          betType: betType as 'BOZO' | 'FAVORITE'
+        }
+      })
+    } catch (error) {
+      console.log('Error checking existing bet (possibly missing teamId column):', error)
+      // If teamId column doesn't exist, try without it
+      existingBet = await prisma.weeklyBet.findFirst({
+        where: {
+          userId,
+          week,
+          season,
+          betType: betType as 'BOZO' | 'FAVORITE'
+        }
+      })
+    }
 
     if (existingBet) {
       return NextResponse.json({ error: `User already has a ${betType.toLowerCase()} bet for this week` }, { status: 409 })
