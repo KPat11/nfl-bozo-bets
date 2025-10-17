@@ -56,18 +56,18 @@ model Team {
 
 model WeeklyBet {
   id        String     @id @default(cuid())
-  userId    String     @map("userid")
-  teamId    String?    @map("teamid") // Team the bet was made for
+  userId    String     // Column is properly named userId
+  teamId    String?    // Column is now properly named teamId
   week      Int
   season    Int
   prop      String
   odds      Float?
-  fanduelId String?    @map("fanduelid")
+  fanduelId String?    // Column is properly named fanduelId
   status    PropStatus @default(PENDING)
-  betType   BetType    @default(BOZO) @map("bettype")
+  betType   BetType    @default(BOZO) // Column is properly named betType
   paid      Boolean    @default(false) // Payment status
-  createdAt DateTime   @default(now()) @map("createdat")
-  updatedAt DateTime   @updatedAt @map("updatedat")
+  createdAt DateTime   @default(now()) // Column is properly named createdAt
+  updatedAt DateTime   @updatedAt // Column is properly named updatedAt
   payments  Payment[]
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   team      Team?      @relation(fields: [teamId], references: [id])
